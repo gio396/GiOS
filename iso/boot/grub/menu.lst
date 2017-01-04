@@ -1,0 +1,7 @@
+default=10
+timeout=10
+
+title os
+kernel /boot/kernel.elf
+title os1
+kernel /boot/kernel.elf
