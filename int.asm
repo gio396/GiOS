@@ -6,7 +6,8 @@
 %macro ISR_NEC 1
   global isr%1
   isr%1:
-    cli
+    ; cli don't need this since all gates are set as interupt gates wich 
+    ; automatically disable interupts.
     push byte 0
     push %1
     jmp isr_common_stub
@@ -15,7 +16,7 @@
 %macro ISR_EC 1
   global isr%1
   isr%1:
-    cli
+    ; cli
     push %1
     jmp isr_common_stub
 %endmacro
@@ -23,7 +24,7 @@
 %macro IRQ 2
   global irq%1
   irq%1:
-  cli
+  ; cli
   push byte 0
   push %2
   jmp irq_common_stub
@@ -135,5 +136,4 @@ irq_common_stub:
   pop ds
   popa
   add esp, 8 ;clear int_no err_no
-  sti
   iret
