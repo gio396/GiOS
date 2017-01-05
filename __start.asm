@@ -83,66 +83,13 @@ _start:
   ;    Since they are disabled, this will lock up the computer.
   ; 3) Jump to the hlt instruction if it ever wakes up due to a
   ;    non-maskable interrupt occurring or due to system management mode.
-  cli
+  cli ; dissable interupts
 .hang:  hlt
   jmp .hang
 .end:
 
-global gdt_flush
-gdt_flush:
-  mov eax, [esp + 4]
-  lgdt [eax]        ; Load the GDT with our '_gp' which is a special pointer
-  mov ax, 0x10      ; 0x10 is the offset in the GDT to our data segment
-  mov ds, ax
-  mov es, ax
-  mov fs, ax
-  mov gs, ax
-  mov ss, ax
-  jmp 0x08:flush2   ; 0x08 is the offset to our code segment: Far jump!
-flush2:
-  ret               ; Returns back to the C code!
-
-global idt_load
-idt_load:
-  mov eax, [esp + 4]
-  lidt [eax]
-  ret
- 
-global isr0
-isr0:
-  cli
-  push byte 0
-  push byte 0
-
-  jmp isr_save_state
-
-extern isr0_handler
-isr_save_state:
-  pusha
-  push ds
-  push es
-  push fs
-  push gs
-  mov ax, 0x10
-  mov ds, ax
-  mov es, ax
-  mov fs, ax
-  mov gs, ax
-
-  mov eax, esp ;push esp for pointer to reg structure
-  push eax
-  mov eax, isr0_handler
-  call eax
-
-  pop eax
-  pop gs
-  pop fs
-  pop es
-  pop ds
-  popa
-  add esp, 8
-  iret
-
+;set cr0 zero bit we don't need to do this 
+;grub already drops us into protected mode
 global enable_pmode
 enable_pmode:
   mov eax, cr0
@@ -150,6 +97,8 @@ enable_pmode:
   mov cr3, eax
   ret
 
+;checks weather cr0 zero bit is set
+;
 global check_pmode
 check_pmode:
   mov eax, cr0
@@ -159,5 +108,18 @@ check_pmode:
   jnc .check_pmode__exit
 
   mov eax, 1
+
   .check_pmode__exit
-    ret
+  ret
+
+;enables paging
+;first argument is page directory address
+global enable_paging
+enable_paging:
+  mov eax, [esp + 4]
+  mov cr3, eax;
+  mov eax, cr0
+
+  or eax, 0x80000000
+  mov cr0, eax
+  ret

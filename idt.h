@@ -26,10 +26,10 @@ struct idt_entry
 struct idt_entry idt[IDT_SIZE];
 struct idt_ptr   idtp;
 
-extern void 
-idt_load(int32 idtp);
-
 void
 idt_install();
+
+void
+idt_set_gate(int32 num, uint32 base, uint16 sel, uint8 flags);
 
 #endif

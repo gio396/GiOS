@@ -1,9 +1,26 @@
 #ifndef __REGISTER_H__
 #define __REGISTER_H__
 
-struct ireg
+#include "common.h"
+
+union biosregs
 {
-  
+  // for interupts;
+  struct 
+  {
+    uint32 i_gs, i_fs, i_es, i_ds;
+    uint32 i_edi, i_esi, i_ebp, i_esp, i_ebx, i_edx, i_ecx, i_eax; //pusha
+    uint32 int_no, err_code;
+    uint32 i_eip, i_cs, i_eflags, i_useresp, i_ss;
+  };
+
+  //general
+  struct
+  {
+    uint32 gs, fs, es, ds;
+    uint32 edi, esi, ebp, esp, ebx, edx, ecx, eax; //pusha
+    uint32 _fsgs, _dses, eflags;
+  };
 };
 
 #endif

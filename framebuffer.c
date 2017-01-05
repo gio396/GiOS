@@ -2,6 +2,7 @@
 
 #include "io.h"
 #include "string.h"
+#include "memory.h"
 
 terminal_state state;
 
@@ -9,7 +10,7 @@ terminal_state state;
   ((bg) << 4) | (fg)
 
 #define VGA_CHAR_COLOR(uc, col)\
-  (uint16)(uc) | (uint16)(col) << 8
+  ((uint16)(uc) | ((uint16)(col) << 8))
 
 //TODO: move this to seperate place
 int32
@@ -32,12 +33,19 @@ write(uint8 *buffer, uint8 *data, int32 size)
 internal void 
 terminal_move_cursor(uint32 index)
 {
-  outb (FB_COMMAND_PORT, FB_HIGH_BYTE_COMMAND);
+  outb(FB_COMMAND_PORT, FB_HIGH_BYTE_COMMAND);
   outb(FB_DATA_PROT, ((index >> 8) & 0x00FF));
   outb(FB_COMMAND_PORT, FB_LOW_BYTE_COMMAND);
   outb(FB_DATA_PROT, (index & 0x00FF));
 }
 
+internal void
+terminal_clear_row(terminal_state *state)
+{
+  uint32 offset_to_row = state->terminal_row * VGA_WIDTH;
+
+  memset(state->terminal_buffer + offset_to_row, 0, VGA_WIDTH * sizeof(uint16));
+}
 
 internal uint32 
 terminal_advance_one(terminal_state *state)
@@ -46,41 +54,88 @@ terminal_advance_one(terminal_state *state)
 
   result = state->terminal_column + state->terminal_row * VGA_WIDTH;
 
-  if (++state->terminal_column > VGA_WIDTH)
+  if (++state->terminal_column >= VGA_WIDTH)
   {
     state->terminal_column = 0;
 
-    if (++state->terminal_row > VGA_HEIGHT)
+    if (++state->terminal_row >= VGA_HEIGHT)
     {
       state->terminal_row = 0;
     }
-  }
 
+    terminal_clear_row(state);
+  }
 
   terminal_move_cursor(state->terminal_column + state->terminal_row * VGA_WIDTH);
   return result;
 }
+
+internal uint32
+terminal_delete_one(terminal_state *state)
+{
+  uint32 result;
+  uint16 data = VGA_CHAR_COLOR(0, state->terminal_color);
+
+  result = state->terminal_column + state->terminal_row * VGA_WIDTH - 1;
+
+  write((uint8*)(state->terminal_buffer + result),  
+    (uint8*)&data, 2);
+
+  if (--state->terminal_column <= 0)
+  {
+    state->terminal_column = VGA_WIDTH - 1;
+
+    if (--state->terminal_row <= 0)
+    {
+      state->terminal_row = VGA_HEIGHT - 1;
+    }
+  }
+
+  terminal_move_cursor(result);
+  return result;
+}
+
 
 internal void 
 terminal_next_line(terminal_state *state)
 {
   state->terminal_column = 0;
 
-  if (state->terminal_row++ > VGA_HEIGHT)
+  if (++state->terminal_row >= VGA_HEIGHT)
   {
     state->terminal_row = 0;
   }
 
+  terminal_clear_row(state);
+  terminal_put_string(state, ">> ");
   terminal_move_cursor(state->terminal_column + state->terminal_row * VGA_WIDTH);
 }
 
 void 
 terminal_put_char(terminal_state *state, const int8 c)
 {
-  int32 index = terminal_advance_one(state);
-  int16 data = VGA_CHAR_COLOR(c, state->terminal_color);
+  switch(c)
+  {
+    case '\b':
+    {
+      terminal_delete_one(state);
+    }
+    break;
 
-  write((uint8*)(state->terminal_buffer + index), (uint8*)&data, 2);
+    case '\n':
+    {
+      terminal_next_line(state);
+    }
+    break;
+
+    default:
+    {
+      int32 index = terminal_advance_one(state);
+      int16 data = VGA_CHAR_COLOR(c, state->terminal_color);
+  
+      write((uint8*)(state->terminal_buffer + index), (uint8*)&data, 2);
+    }
+  }
 }
 
 void 

@@ -25,11 +25,15 @@ typedef int32 size_t;
 #define global_persist static
 #define local_persist  static
 
+#define global
+
 #define FALSE 0
 #define TRUE !FALSE
 
 #define set_att(att) __attribute__((att))
+#define set_att_2(att, val) __attribute__((att(val)))
 
 #define att_packed set_att(packed);
+#define att_aligned(val) set_att_2(aligned, val)
 
 #endif

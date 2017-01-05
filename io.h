@@ -13,6 +13,10 @@ int32 outb(uint16 port, uint16 data);
 
 int32 inb(uint16 port);
 
-int32 load_idt(uint32 idt_ptr);
+int32 halt();
+
+int32 idt_load(uint32 idt_ptr);
+
+int32 gdt_flush(uint32 gdt_ptr);
 
 #endif

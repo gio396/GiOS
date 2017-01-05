@@ -15,16 +15,13 @@ struct gdt_entry
   uint16 base_low;
   
   uint8 base_middle;
-  uint8 access;
-  uint8 granularity;
+  uint8 access; // [P-|DPL--|DT-|TYPE----|
+  uint8 granularity; // [G-|DB-|0-|A-|LIMIT----];
   uint8 base_high;
 } att_packed;
 
-struct gdt_entry gdt[3];
+struct gdt_entry gdt[5];
 struct gdt_ptr gp;
-
-extern void
-gdt_flush(int32 gp);
 
 void 
 gdt_install();
