@@ -54,8 +54,6 @@
 internal void
 gdt_set_gate(int32 num, uint32 base, uint32 limit, uint16 flags)
 {
-
-  printk(&state, "flags: %d\n", flags);
   gdt[num].base_low     = (base & 0x0000FFFF);
   gdt[num].base_middle  = (base & 0x00FF0000);
   gdt[num].base_high    = (base & 0xFF000000);
@@ -69,8 +67,6 @@ gdt_set_gate(int32 num, uint32 base, uint32 limit, uint16 flags)
 
   gdt[num].access = ((flags & 0xF000) >> 8) |
                     (flags & 0x000F);       //[P-|DPL--|DT-|TYPE----|
-
-  printk(&state, "acess: %d gran: %d\n", gdt[num].access, gdt[num].granularity);
 }
 
 void 
@@ -78,9 +74,6 @@ gdt_install()
 {
   gp.limit = (sizeof(struct gdt_entry) * 3) - 1;
   gp.base = (int32)&gdt;
-
-  printk(&state, "gp limit %d, gp base %d\n",
-                      gp.limit, gp.base);
 
   //null descriptor
   gdt_set_gate(0,0,0,0);
@@ -97,8 +90,5 @@ gdt_install()
   //userspace data segment 4gb, 4kb alligned
   gdt_set_gate(4, 0, 0xFFFFFFFF, GDT_DATA_PL3);
 
-  printk(&state, "flushed gp at %d\n", (int32)&gp);
   gdt_flush((int32)&gp);
-  printk(&state, "flushed gp at %d\n", (int32)&gp);
-
 }

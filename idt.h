@@ -29,7 +29,4 @@ struct idt_ptr   idtp;
 void
 idt_install();
 
-void
-idt_set_gate(int32 num, uint32 base, uint16 sel, uint8 flags);
-
 #endif

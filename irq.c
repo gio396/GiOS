@@ -6,35 +6,8 @@
 
 typedef void(*PROCIRQHandler)(const union biosregs *reg);
 
-#define def_irq(num) extern void irq##num(void)
-
-def_irq(0);
-def_irq(1);
-def_irq(2);
-def_irq(3);
-def_irq(4);
-def_irq(5);
-def_irq(6);
-def_irq(7);
-def_irq(8);
-def_irq(9);
-def_irq(10);
-def_irq(11);
-def_irq(12);
-def_irq(13);
-def_irq(14);
-def_irq(15);
-
-#undef def_irq
-
 internal void 
 sti_enable() { __asm__ __volatile__ ("sti"); }
-
-internal void
-def_keyboard_handler(void)
-{
-  inb(0x60);
-}
 
 global void *irq_handlers[] = 
 {
@@ -79,8 +52,9 @@ irq_common_handler(const union biosregs *reg)
 
 
 //remap irq 0 - 15 to 32 - 49 for protected mode
-//TODO(gio): add ability to set offset1 for master PIC
+//TODO(gio): Add ability to set offset1 for master PIC
 //           and offset for slave PIC manually.
+//         : Get rid of magic numbers.
 internal void
 irq_remap(void)
 {
@@ -105,25 +79,6 @@ void
 irq_install(void)
 {
   irq_remap();
-
-  idt_set_gate(32, (uint32)irq0,  0x08, 0x8E);
-  idt_set_gate(33, (uint32)irq1,  0x08, 0x8E);
-  idt_set_gate(34, (uint32)irq2,  0x08, 0x8E);
-  idt_set_gate(35, (uint32)irq3,  0x08, 0x8E);
-  idt_set_gate(36, (uint32)irq4,  0x08, 0x8E);
-  idt_set_gate(37, (uint32)irq5,  0x08, 0x8E);
-  idt_set_gate(38, (uint32)irq6,  0x08, 0x8E);
-  idt_set_gate(39, (uint32)irq7,  0x08, 0x8E);
-  idt_set_gate(40, (uint32)irq8,  0x08, 0x8E);
-  idt_set_gate(41, (uint32)irq9,  0x08, 0x8E);
-  idt_set_gate(42, (uint32)irq10, 0x08, 0x8E);
-  idt_set_gate(43, (uint32)irq11, 0x08, 0x8E);
-  idt_set_gate(44, (uint32)irq12, 0x08, 0x8E);
-  idt_set_gate(45, (uint32)irq13, 0x08, 0x8E);
-  idt_set_gate(46, (uint32)irq14, 0x08, 0x8E);
-  idt_set_gate(47, (uint32)irq15, 0x08, 0x8E);
-
-  irq_set_handler(1, def_keyboard_handler);
 
   sti_enable();
 }
