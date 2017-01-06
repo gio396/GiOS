@@ -7,7 +7,7 @@ LDFLAGS=-T link.ld -melf_i386
 AS=nasm
 ASFLAGS=-f elf
 
-SUBDIRS:=arch/x86
+SUBDIRS="arch/x86"
 
 OBJS= \
 	 keyboard.o kmain.o __start.o

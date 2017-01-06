@@ -101,7 +101,7 @@ check_pmode:
 
   mov eax, 1
 
-  .check_pmode__exit
+  .check_pmode__exit:
   ret
 
 ;enables paging
