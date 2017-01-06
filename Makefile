@@ -7,7 +7,7 @@ AS=nasm
 ASFLAGS=-f elf
 
 OBJS= \
-	 __start.o kmain.o framebuffer.o io.o interupts.o gdt.o idt.o memory.o string.o int.o irq.o keyboard.o page.o
+	 __start.o kmain.o framebuffer.o io.o gdt.o idt.o memory.o string.o int.o irq.o keyboard.o page.o
 
 all: kernel.elf
 
