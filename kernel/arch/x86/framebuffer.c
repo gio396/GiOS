@@ -1,9 +1,9 @@
 #include "framebuffer.h"
 
-#include "io.h"
-#include "string.h"
-#include "memory.h"
-#include "stdarg.h"
+#include <arch/x86/io.h>
+#include <string.h>
+#include <memory.h>
+#include <stdarg.h>
 
 terminal_state state;
 

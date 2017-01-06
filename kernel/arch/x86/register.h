@@ -1,7 +1,7 @@
 #ifndef __REGISTER_H__
 #define __REGISTER_H__
 
-#include "common.h"
+#include <common.h>
 
 union biosregs
 {

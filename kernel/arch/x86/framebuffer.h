@@ -1,7 +1,7 @@
 #ifndef __FRAMEBUFFER_H__
 #define __FRAMEBUFFER_H__
 
-#include "common.h"
+#include <common.h>
 
 #define VGA_WIDTH  80
 #define VGA_HEIGHT 25

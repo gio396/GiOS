@@ -1,9 +1,10 @@
 #include "idt.h"
 
-#include "memory.h"
-#include "framebuffer.h"
-#include "register.h"
-#include "io.h"
+#include <arch/x86/framebuffer.h>
+#include <arch/x86/register.h>
+#include <arch/x86/io.h>
+
+#include <memory.h>
 
 #define def_isr(num) extern void isr##num(void)
 

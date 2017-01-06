@@ -1,18 +1,20 @@
 CC=gcc
 CFLAGS=-m32 -O3 -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding -ggdb
+CINCLUDES=-I kernel/  -I libc/
 
 LDFLAGS=-T link.ld -melf_i386 
 
+OBJS=$(.o)
 AS=nasm
 ASFLAGS=-f elf
 
-OBJS= \
-	 __start.o kmain.o framebuffer.o io.o gdt.o idt.o memory.o string.o int.o irq.o keyboard.o page.o
+SUBDIRS:=kernel libc
+BUILD_ROOT:=$(shell pwd)
 
-all: kernel.elf
+.PHONY all: $(SUBDIRS) kernel.elf
 
-kernel.elf: $(OBJS)
-	ld $(LDFLAGS) $(OBJS) -o kernel.elf
+kernel.elf: $(SUBDIRS)
+	ld $(LDFLAGS) OBJS/* -o kernel.elf
 
 os.iso: kernel.elf
 	objcopy --only-keep-debug kernel.elf kernel.sym
@@ -32,8 +34,11 @@ os.iso: kernel.elf
 run: clean os.iso
 		qemu-system-x86_64  -boot d -kernel kernel.elf -m 4096  -monitor stdio
 
+$(SUBDIRS):
+	$(MAKE) -C $@ BUILD_ROOT="$(BUILD_ROOT)"
+
 %.o: %.c
-	$(CC) $(CFLAGS)  $< -o $@
+	$(CC) $(CFLAGS) (CINCLUDES)  $< -o $@
 
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@

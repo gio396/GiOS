@@ -1,7 +1,7 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 
-#include "common.h"
+#include <common.h>
 
 void *
 memset(void* s, int32 c, size_t n);

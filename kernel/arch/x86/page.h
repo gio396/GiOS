@@ -1,7 +1,7 @@
 #ifndef __PAGE_H__
 #define __PAGE_H__
 
-#include "common.h"
+#include <common.h>
 
 #define PAGE_DIRECTORY_SIZE 1024
 #define PAGE_TABLE_SIZE 1024

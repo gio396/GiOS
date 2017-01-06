@@ -1,8 +1,8 @@
 #include "irq.h"
 
-#include "idt.h"
-#include "io.h" // for outb
-#include "framebuffer.h"
+#include <arch/x86/idt.h>
+#include <arch/x86/io.h> // for outb
+#include <arch/x86/framebuffer.h>
 
 #define PIC1 0x20
 #define PIC2 0xA0

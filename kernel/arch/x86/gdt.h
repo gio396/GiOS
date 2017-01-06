@@ -1,7 +1,7 @@
 #ifndef __GDT_H__
 #define __GDT_H__
 
-#include "common.h"
+#include <common.h>
 
 struct gdt_ptr 
 {

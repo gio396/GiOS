@@ -1,7 +1,7 @@
 #ifndef __STRING_H__
 #define __STRING_H__
 
-#include "common.h"
+#include <common.h>
 
 uint32
 strlen(const int8* string);

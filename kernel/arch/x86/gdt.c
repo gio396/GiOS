@@ -1,8 +1,8 @@
 #include "gdt.h"
 
-#include "common.h"
-#include "framebuffer.h"
-#include "io.h"
+#include <common.h>
+#include <arch/x86/framebuffer.h>
+#include <arch/x86/io.h>
 
 
 #define SEG_PRES(x) ((x) << 0x0F) // 1 present 0 not present

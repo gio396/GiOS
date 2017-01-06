@@ -1,7 +1,7 @@
 #ifndef __IO_H__
 #define __IO_H__
 
-#include "common.h"
+#include <common.h>
 
 #define KB_COMMAND_PORT 0x60
 #define KB_DATA_PORT    0x64

@@ -1,9 +1,9 @@
 #include "keyboard.h"
 
-#include "register.h"
-#include "io.h"
-#include "irq.h"
-#include "framebuffer.h"
+#include <arch/x86/register.h>
+#include <arch/x86/io.h>
+#include <arch/x86/irq.h>
+#include <arch/x86/framebuffer.h>
 
 unsigned char kbdlt[128] =
 {
