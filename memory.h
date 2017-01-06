@@ -6,4 +6,7 @@
 void *
 memset(void* s, int32 c, size_t n);
 
+void*
+memcpy(const void* s, void *dst, size_t n);
+
 #endif

@@ -3,6 +3,7 @@
 #include "io.h"
 #include "string.h"
 #include "memory.h"
+#include "stdarg.h"
 
 terminal_state state;
 
@@ -11,6 +12,13 @@ terminal_state state;
 
 #define VGA_CHAR_COLOR(uc, col)\
   ((uint16)(uc) | ((uint16)(col) << 8))
+
+#define FB_HIGH_BYTE_COMMAND    14
+#define FB_LOW_BYTE_COMMAND     15
+
+//TODO(GIO): Save the Buffer that gets scrolled
+//         : Fix the scrolling.
+//         : Enable scrolling using arrows on keyboard.
 
 //TODO: move this to seperate place
 int32
@@ -27,8 +35,6 @@ write(uint8 *buffer, uint8 *data, int32 size)
   return result;
 }
 
-#define FB_HIGH_BYTE_COMMAND    14
-#define FB_LOW_BYTE_COMMAND     15
 
 internal void 
 terminal_move_cursor(uint32 index)
@@ -180,27 +186,9 @@ terminal_init(terminal_state *state)
   }
 }
 
-#define MAX_PRINTK 256
-
-#ifndef stdarg_hxx
-#define stdarg_hxx
-
-typedef void * va_list;
-
-#define __va_size( type ) \
-( ( sizeof( type ) + 3 ) & ~0x3 )
-
-#define va_start( va_l, last ) \
-( ( va_l ) = ( void * )&( last ) + __va_size( last ) )
-
-#define va_end( va_l )
-
-#define va_arg( va_l, type ) \
-( ( va_l ) += __va_size( type ), \
-*( ( type * )( ( va_l ) - __va_size( type ) ) ) )
-
-#endif
-
+//TODO(GIO): Make this handle unsigned and signed integers.
+//         : Make this handle different formating options available in printf.
+//         : Fix this mess.
 void
 printk(terminal_state *state, const int8 *format, ...)
 {
@@ -211,14 +199,94 @@ printk(terminal_state *state, const int8 *format, ...)
   {
     if (*format == '%')
     {
-      switch (*++format)
+      int8 nxt = *++format;
+      const int8 *run_start = format;
+      b32 run = 0;
+      int32 width;
+
+      while(nxt >= '0' && nxt <= '9')
       {
+        nxt = *++format;
+        run++;
+      }
+
+      width = atoi(run_start);
+
+      switch (nxt)
+      {
+        //signed integer base 10
         case 'd':
+        case 'i':
         {
           int32 val = va_arg(args, int32);
+          char buffer[12];
+          itoa(val, buffer, 10);
 
-          char buffer[24];
-          itoa(val, buffer);
+          if (run)
+          {
+            int32 len = strlen(buffer);
+            while(len++ < width)
+              terminal_put_char(state, '0');
+
+          }
+
+          terminal_put_string(state, buffer);
+        }
+        break;
+        case 'u':
+        {
+          //TODO
+        }
+        break;
+        case 'x':
+        {
+          int32 val = va_arg(args, int32);
+          char buffer[12];
+          itoa(val, buffer, 16);
+
+          if (run)
+          {
+            int32 len = strlen(buffer);
+            while(len++ < width)
+              terminal_put_char(state, '0');
+
+          }
+
+          terminal_put_string(state, buffer);
+        }
+        break;
+        case 'X':
+        {
+          int32 val = va_arg(args, int32);
+          char buffer[12];
+          itoa(val, buffer, 16);
+
+          if (run)
+          {
+            int32 len = strlen(buffer);
+            while(len++ < width)
+              terminal_put_char(state, '0');
+
+          }
+
+          to_upper(buffer);
+          terminal_put_string(state, buffer);
+        }
+        break;
+        case 'b':
+        {
+          int32 val = va_arg(args, int32);
+          char buffer[33];
+          itoa(val, buffer, 2);
+
+          if (run)
+          {
+            int32 len = strlen(buffer);
+            while(len++ < width)
+              terminal_put_char(state, '0');
+
+          }
+
           terminal_put_string(state, buffer);
         }
         break;
@@ -232,6 +300,11 @@ printk(terminal_state *state, const int8 *format, ...)
         {
           int8 *val = (int8*)va_arg(args, int32);
           terminal_put_string(state, val);
+        }
+        break;
+        case '%':
+        {
+          terminal_put_char(state, '%');
         }
       }
     }

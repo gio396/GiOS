@@ -1,7 +1,7 @@
 #include "string.h"
 
 uint32
-strlen(const uint8* string)
+strlen(const int8* string)
 {
   uint32 res = 0;
 
@@ -10,40 +10,75 @@ strlen(const uint8* string)
   return(res - 1);
 }
 
-uint32
-itoa(int32 integer, int8* string)
+int8* 
+itoa(int32 value, int8* str, uint32 base)
 {
-  int32 val = integer;
-  int32 it = 0;
-  int32 len = 1;
-  int32 minus = 0;
+  char * rc;
+  char * ptr;
+  char * low;
 
-  while((val /= 16) != 0) 
-    len++;
-
-  if (integer < 0)
+  if ( base < 2 || base > 36 )
   {
-    string[0] = '-';
-    minus = 1;
-    integer *= -1;
+      *str = '\0';
+      return str;
   }
 
-  for (int32 i = 1; i <= len; i++)
+  rc = ptr = str;
+  // Set '-' for negative decimals.
+  if ( value < 0 && base == 10 )
   {
-    int32 rem = integer % 16;
-    integer = integer / 16;
-
-    if (rem > 9)
-    {
-      string[len - i + minus] = 'A' + (rem - 10);
-    }
-    else
-    {
-      string[len - i + minus] = '0' + rem;
-    }
+      *ptr++ = '-';
   }
 
-  string[len + minus] = '\0';
+  low = ptr;
 
-  return it;
+  do
+  {
+    *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz"[35 + value % base];
+    value /= base;
+  } while ( value );
+  // Terminating the string.
+  *ptr-- = '\0';
+  // Invert the numbers.
+  while ( low < ptr )
+  {
+      char tmp = *low;
+      *low++ = *ptr;
+      *ptr-- = tmp;
+  }
+  return rc;
+}
+
+int8*
+to_upper(int8 *str)
+{
+  int8 *rc = str;
+
+  while(*str != '\0')
+  {
+    if (*str >= 'a' && *str <= 'z')
+    {
+      *str -= 0x20;
+    }
+
+    str++;
+  }
+
+  return rc;
+}
+
+//TODO(GIO): handle bases (2 - 36)
+int32
+atoi(const int8* str)
+{
+  int32 res = 0;
+
+  while(*str >= '0' && *str <= '9')
+  {
+    res *= 10;
+    res += (*str - '0');
+    ++str;
+  }
+
+  return res;
 }

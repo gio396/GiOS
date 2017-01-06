@@ -20,7 +20,4 @@ kstart()
   keyboard_install(0);
 
   page_init();
-
-  for(;;)
-    halt();
 }

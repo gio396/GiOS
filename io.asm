@@ -33,7 +33,7 @@ idt_load:
   lidt [eax]
   ret
 
-
+;halts the cpu
 global halt
 halt:
   hlt

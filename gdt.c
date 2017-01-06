@@ -8,7 +8,7 @@
 #define SEG_PRES(x) ((x) << 0x0F) // 1 present 0 not present
 #define SEG_PRIV(x) ((x) << 0x0E) // privilage ring (0 - 3)
 #define SEG_DSCT(x) ((x) << 0x0C) // 1 system 0 code\data
-#define SEG_GRAN(x) ((x) << 0x07) // 1 longmode 0 1byte mode
+#define SEG_GRAN(x) ((x) << 0x07) // 1 4kb mode 0 1byte mode
 #define SEG_OPSZ(x) ((x) << 0x06) // 1 32bit 0 16bit
 #define SEG_LONG(x) ((x) << 0x05) // long mode
 #define SEG_SAVL(x) ((x) << 0x04) // available for system?
@@ -49,11 +49,14 @@
 
 
 //sets gdt_gate at num index.
-//      0  1     3   4     8  9  10  11 12      16
+//      16 15    13  12    8  7   6  5  4        0
 //flags [P-|DPL--|DT-|0----|G-|DB-|0-|A-|TYPE----]
 internal void
 gdt_set_gate(int32 num, uint32 base, uint32 limit, uint16 flags)
 {
+  printk(&state, "Setting gdt %d, base 0x%8X, limit 0x%8X, flags %16b\n",
+         num, base, limit, flags);
+
   gdt[num].base_low     = (base & 0x0000FFFF);
   gdt[num].base_middle  = (base & 0x00FF0000);
   gdt[num].base_high    = (base & 0xFF000000);
@@ -72,10 +75,15 @@ gdt_set_gate(int32 num, uint32 base, uint32 limit, uint16 flags)
 void 
 gdt_install()
 {
+  printk(&state, "Creating GDT table\n");
+
   gp.limit = (sizeof(struct gdt_entry) * 3) - 1;
   gp.base = (int32)&gdt;
 
-  //null descriptor
+  printk(&state, "GDT limit 0x%4X. base 0x%8X\n",
+         gp.limit, gp.base);
+
+  // null descriptor
   gdt_set_gate(0,0,0,0);
 
   //code segment 4gb, 4kb aligned
@@ -91,4 +99,5 @@ gdt_install()
   gdt_set_gate(4, 0, 0xFFFFFFFF, GDT_DATA_PL3);
 
   gdt_flush((int32)&gp);
+  printk(&state, "Flushed GP at 0x%8X\n", (int32)&gp);
 }

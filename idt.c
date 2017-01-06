@@ -77,12 +77,12 @@ def_irq(15);
 #define IDT_INTR_PL0 (uint8)(SEG_PRES(1) | SEG_PRIV(0) | SEG_SGAT(0) | \
                              SEG_32_INTR_GATE)
 
-//      0  1      5  6        8
+//      8  7      5  4        0
 //flags [p-|DPL---|S-|TYPE----]
 void 
 idt_set_gate(int32 num, uint32 base, uint16 sel, uint8 flags)
 {
-  printk(&state, "Setting idt gate %d at base %d, sle %d, flags %d\n",
+  printk(&state, "Setting idt gate: %d, Base 0x%8X, Segment 0x%2X, Flags %b\n",
          num, base, sel, flags);
 
   idt[num].base_low =  (base & 0xFFFF);
@@ -97,13 +97,13 @@ idt_set_gate(int32 num, uint32 base, uint16 sel, uint8 flags)
 void 
 idt_install()
 {
-  printk(&state, "Installing idt table\n");
+  printk(&state, "Creating IDT table\n");
 
   idtp.limit = (sizeof (struct idt_entry) * IDT_SIZE) - 1;
   idtp.base = (int32)&idt;
 
-  printk(&state, "sizeof idt_entry %d\n", sizeof(struct idt_entry));
-  printk(&state, "idtp limit %d, base %d\n", idtp.limit, idtp.base);
+  printk(&state, "IDTP limit 0x%4X, base 0x%8X\n", 
+         idtp.limit, idtp.base);
 
   memset (&idt, 0, sizeof (struct idt_entry) * 256);
 
@@ -160,7 +160,7 @@ idt_install()
   idt_set_gate(47, (uint32)irq15, 0x08, IDT_INTR_PL0);
   
   idt_load((int32)&idtp);
-  printk(&state, "Pushed idtp at %d\n", (int32)&idtp);
+  printk(&state, "Pushed IDTP at 0x%8X\n", (int32)&idtp);
 }
 
 const char* idt_error_desc[] =

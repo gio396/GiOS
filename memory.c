@@ -11,3 +11,17 @@ memset(void *s, int32 c, size_t n)
 
     return s;
 }
+
+void*
+memcpy(const void* s, void* d, size_t n)
+{
+  const uint8* sp = (uint8*)s;
+  uint8* dp = (uint8*)d;
+
+  for(size_t i = 0; i < n; i++)
+  {
+    dp[i] = sp[i];
+  }
+
+  return d;
+}

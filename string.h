@@ -4,9 +4,15 @@
 #include "common.h"
 
 uint32
-strlen(const uint8* string);
+strlen(const int8* string);
 
-uint32
-itoa(int32 integer, int8* string);
+int8*
+itoa(int32 value, int8* str, uint32 base);
+
+int32
+atoi(const int8* str);
+
+int8*
+to_upper(int8* str);
 
 #endif
