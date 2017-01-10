@@ -9,6 +9,9 @@
 #include <keyboard.h>
 #include <memory.h>
 
+
+extern uint32 end_kernel;
+
 void 
 kstart()
 {
@@ -21,4 +24,9 @@ kstart()
   keyboard_install(0);
 
   page_init();
+
+  map_page((void*)0x12FF0000, (void*)0x12340000, 0x3);
+  uint32 addr = (uint32)get_physaddr((void*)0x12340000);
+
+  printk(&state, "Phys addr = %8X\n", addr);
 }

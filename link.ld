@@ -30,8 +30,11 @@ SECTIONS
   /* Read-write data (uninitialized) and stack */
   .bss BLOCK(4K) : ALIGN(4K)
   {
-    *(COMMON)
+    /**(COMMON)*/
+    sbss = .;
     *(.bss)
+    ebss = .;
+    ekernel = .;
   }
 
   /* The compiler may produce other sections, by default it will put them in
