@@ -11,10 +11,16 @@
 #include <assert.h>
 #include <macros.h>
 
-extern uint32 end_kernel;
+extern const uint32 l_srodata;
+extern const uint32 l_erodata;
+extern const uint32 l_sdata;
+extern const uint32 l_edata;
+extern const uint32 l_sbss;
+extern const uint32 l_ebss;
+extern const uint32 l_ekernel;
 
 void 
-kstart()
+kmain()
 {
   terminal_init(&state);
   printk(&state, "Init done\n");
@@ -26,8 +32,10 @@ kstart()
 
   page_init();
 
-  map_page((void*)0x12FF0000, (void*)0x12340000, 0x3);
-  uint32 addr = (uint32)get_physaddr((void*)0x12340000);
-
-  printk(&state, "Phys addr = %8X\n", addr);
+  printk(&state, "\n");
+  printk(&state, "read only data [0x%8X, 0x%8X]\n", &l_srodata, &l_erodata);
+  printk(&state, "data           [0x%8X, 0x%8X]\n", &l_sdata, &l_edata);
+  printk(&state, "bss            [0x%8X, 0x%8X]\n", &l_sbss, &l_ebss);
+  printk(&state, "end of kernel  0x%8X\n", &l_ekernel);
+  printk(&state, "\n"); 
 }

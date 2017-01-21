@@ -18,12 +18,6 @@
 //TODO(gio): implement higher half kernel for userspace 
 //           (http://wiki.osdev.org/Higher_Half_Kernel)
 
-
-//TODO(gio): move this to oage frame allocator
-uint32 page_directory_entry[PAGE_DIRECTORY_SIZE] att_aligned(4096);
-uint32 first_page_table[PAGE_TABLE_SIZE] att_aligned(4096);
-uint32 last_page_table[1024] att_aligned(4096);
-
 void
 page_init();
 
@@ -35,5 +29,16 @@ get_physaddr(void *virtaddr);
 
 void
 map_page(void* physaddr, void* virtaddr, uint32 flags);
+
+// alocates 4kb phys memory and returns adresss
+// 1 to 1 mapping
+void*
+kalloc();
+
+
+//frees 4kb of phys memory must be used on pointer returned by kalloc
+//1 to 1 mapping
+void
+kfree(void *page);
 
 #endif
