@@ -3,9 +3,6 @@
 
 #include <common.h>
 
-#define PAGE_DIRECTORY_SIZE 1024
-#define PAGE_TABLE_SIZE 1024
-
 //TODO(gio): Wrote page frame allocator
 
 //TODO(gio): dinamically create page table entries;

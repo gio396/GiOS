@@ -1,8 +1,10 @@
 #include "page.h"
 #include <arch/x86/framebuffer.h>
 
-extern const uint32 l_ekernel;
+#define PAGE_DIRECTORY_SIZE 1024
+#define PAGE_TABLE_SIZE 1024
 
+extern const uint32 l_ekernel;
 uint32 *page_directory_entry;
 uint32 *first_page_table;
 
@@ -24,14 +26,14 @@ page_init()
 
   //empty out all pages
 
-  for (int p = 0; p < PAGE_DIRECTORY_SIZE; p++)
+  for (int32 p = 0; p < PAGE_DIRECTORY_SIZE; p++)
   {
     page_directory_entry[p] = 0x00000002;
   }
 
   //init first page table
 
-  for (int t = 0; t < PAGE_TABLE_SIiZE; t++)
+  for (int32 t = 0; t < PAGE_TABLE_SIZE; t++)
   {
     first_page_table[t] = (t * 0x1000) | 3;
   }
@@ -41,7 +43,8 @@ page_init()
   enable_paging((uint32)page_directory_entry);
 }
 
+void*
 kalloc()
 {
-  return 0; 
+  return NULL; 
 }
