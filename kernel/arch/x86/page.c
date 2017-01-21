@@ -1,5 +1,8 @@
 #include "page.h"
+
 #include <arch/x86/framebuffer.h>
+
+#include <macros.h>
 
 #define PAGE_DIRECTORY_SIZE 1024
 #define PAGE_TABLE_SIZE 1024
@@ -7,12 +10,6 @@
 extern const uint32 l_ekernel;
 uint32 *page_directory_entry;
 uint32 *first_page_table;
-
-//[avai_size, pointer to the head of ll|]
-
-
-#include <assert.h>
-#include <macros.h>
 
 void
 page_init()
@@ -38,7 +35,7 @@ page_init()
     first_page_table[t] = (t * 0x1000) | 3;
   }
 
-  page_directory_entry[0] = ((uint32)first_page_table | 3);
+  page_directory_entry[768] = ((uint32)first_page_table | 3);
 
   enable_paging((uint32)page_directory_entry);
 }

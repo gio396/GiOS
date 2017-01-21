@@ -4,6 +4,9 @@ MEMINFO  equ  1<<1              ; provide memory map
 FLAGS    equ  MBALIGN | MEMINFO ; this is the Multiboot 'flag' field
 MAGIC    equ  0x1BADB002        ; 'magic number' lets bootloader find the header
 CHECKSUM equ -(MAGIC + FLAGS)   ; checksum of above, to prove we are multiboot
+
+KERNEL_VIRTUAL_BASE equ 0xC0000000                  ; 3GB
+KERNEL_PAGE_NUMBER equ (KERNEL_VIRTUAL_BASE >> 22)  ; Page directory index of kernel's 4MB PTE.
  
 ; Declare a multiboot header that marks the program as a kernel. These are magic
 ; values that are documented in the multiboot standard. The bootloader will
@@ -16,29 +19,42 @@ align 4
   dd FLAGS
   dd CHECKSUM
  
-; The multiboot standard does not define the value of the stack pointer register
-; (esp) and it is up to the kernel to provide a stack. This allocates room for a
-; small stack by creating a symbol at the bottom of it, then allocating 16384
-; bytes for it, and finally creating a symbol at the top. The stack grows
-; downwards on x86. The stack is in its own section so it can be marked nobits,
-; which means the kernel file is smaller because it does not contain an
-; uninitialized stack. The stack on x86 must be 16-byte aligned according to the
-; System V ABI standard and de-facto extensions. The compiler will assume the
-; stack is properly aligned and failure to align the stack will result in
-; undefined behavior.
-section .bss
-align 4
-stack_bottom:
-resb 16384 ; 16 KiB
-stack_top:
+section .data
+align 0x1000
+BootPageDirectory:
+    ; This page directory entry identity-maps the first 4MB of the 32-bit physical address space.
+    ; All bits are clear except the following:
+    ; bit 7: PS The kernel page is 4MB.
+    ; bit 1: RW The kernel page is read/write.
+    ; bit 0: P  The kernel page is present.
+    ; This entry must be here -- otherwise the kernel will crash immediately after paging is
+    ; enabled because it can't fetch the next instruction! It's ok to unmap this page later.
+    dd 0x00000083
+    times (KERNEL_PAGE_NUMBER - 1) dd 0                 ; Pages before kernel space.
+    ; This page directory entry defines a 4MB page containing the kernel.
+    dd 0x00000083
+    times (1024 - KERNEL_PAGE_NUMBER - 1) dd 0  ; Pages after the kernel image.
  
 ; The linker script specifies _start as the entry point to the kernel and the
 ; bootloader will jump to this position once the kernel has been loaded. It
 ; doesn't make sense to return from this function as the bootloader is gone.
 ; Declare _start as a function symbol with the given symbol size.
 section .text
-global _start:function (_start.end - _start)
+STACKSIZE equ 0x4000
+
+start equ (_start - 0xC0000000)
+global start:
 _start:
+    mov ecx, (BootPageDirectory - KERNEL_VIRTUAL_BASE)
+    mov cr3, ecx                                        ; Load Page Directory Base Register.
+ 
+    mov ecx, cr4
+    or ecx, 0x00000010                                  ; Set PSE bit in CR4 to enable 4MB pages.
+    mov cr4, ecx
+ 
+    mov ecx, cr0
+    or ecx, 0x80000000                                  ; Set PG bit in CR0 to enable paging.
+    mov cr0, ecx
   ; The bootloader has loaded us into 32-bit protected mode on a x86
   ; machine. Interrupts are disabled. Paging is disabled. The processor
   ; state is as defined in the multiboot standard. The kernel has full
@@ -49,11 +65,19 @@ _start:
   ; safeguards, no debugging mechanisms, only what the kernel provides
   ; itself. It has absolute and complete power over the
   ; machine.
- 
+
+  lea ecx, [StartInHigherHalf]
+  jmp ecx                                               ; NOTE: Must be absolute jump!
+StartInHigherHalf:
+  mov dword [BootPageDirectory], 0
+  invlpg [0]
   ; To set up a stack, we set the esp register to point to the top of our
   ; stack (as it grows downwards on x86 systems). This is necessarily done
   ; in assembly as languages such as C cannot function without a stack.
-  mov esp, stack_top
+  mov esp, stack + STACKSIZE
+
+  push eax
+  push ebx
  
   ; This is a good place to initialize crucial processor state before the
   ; high-level kernel is entered. It's best to minimize the early
@@ -79,6 +103,11 @@ _start:
 .hang:  hlt
   jmp .hang
 .end:
+
+section .bss
+align 32
+stack:
+    resb STACKSIZE      ; reserve 16k stack on a uint64_t boundary
 
 ;set cr0 zero bit we don't need to do this 
 ;grub already drops us into protected mode
@@ -111,6 +140,10 @@ enable_paging:
   mov eax, [esp + 4]
   mov cr3, eax;
   mov eax, cr0
+
+  mov ecx, cr4
+  or ecx, 0x00000010
+  mov cr4, ecx
 
   or eax, 0x80000000
   mov cr0, eax

@@ -168,7 +168,7 @@ terminal_init(terminal_state *state)
 {
   state->terminal_row = 0;
   state->terminal_column = 0;
-  state->terminal_buffer = (uint16 *)(0xb8000);
+  state->terminal_buffer = (uint16 *)(0xC00B8000);
   state->terminal_color = VGA_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY);
 
   terminal_move_cursor(0);
