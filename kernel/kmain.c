@@ -29,9 +29,7 @@ kmain()
   idt_install();
   irq_install();
   keyboard_install(0);
-
-  //have to change this
-  // page_init();
+  page_init();
 
   printk(&state, "\n");
   printk(&state, "read only data [0x%8X, 0x%8X]\n", &l_srodata, &l_erodata);

@@ -21,6 +21,9 @@ page_init();
 extern void
 enable_paging(uint32 page_directory_ptr);
 
+extern int32
+check_pmode();
+
 void *
 get_physaddr(void *virtaddr);
 

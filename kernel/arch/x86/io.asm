@@ -38,3 +38,27 @@ global halt
 halt:
   hlt
   ret
+
+;checks weather cr0 zero bit is set
+;
+global check_pmode
+check_pmode:
+  mov eax, cr0
+  bt eax, 0
+
+  mov eax, 0
+  jnc .check_pmode__exit
+
+  mov eax, 1
+
+  .check_pmode__exit:
+  ret
+
+;enables paging
+;first argument is page directory address
+global enable_paging
+enable_paging:
+  mov eax, [esp + 4]
+  mov cr3, eax;
+  mov eax, cr0
+  ret

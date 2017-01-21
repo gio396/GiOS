@@ -1,11 +1,14 @@
 #include "page.h"
 
 #include <arch/x86/framebuffer.h>
+#include <arch/x86/io.h>
 
 #include <macros.h>
 
+
 #define PAGE_DIRECTORY_SIZE 1024
 #define PAGE_TABLE_SIZE 1024
+#define KERNEL_VIRTUAL_BASE 0xC0000000
 
 extern const uint32 l_ekernel;
 uint32 *page_directory_entry;
@@ -35,9 +38,9 @@ page_init()
     first_page_table[t] = (t * 0x1000) | 3;
   }
 
-  page_directory_entry[768] = ((uint32)first_page_table | 3);
+  page_directory_entry[768] = ((uint32)first_page_table - KERNEL_VIRTUAL_BASE) | 3;
 
-  enable_paging((uint32)page_directory_entry);
+  enable_paging((uint32)page_directory_entry - KERNEL_VIRTUAL_BASE);
 }
 
 void*

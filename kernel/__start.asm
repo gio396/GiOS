@@ -33,9 +33,9 @@ BootPageDirectory:
     times (KERNEL_PAGE_NUMBER - 1) dd 0                 ; Pages before kernel space.
     ; This page directory entry defines a 4MB page containing the kernel.
     dd 0x00000083
-    times (1024 - KERNEL_PAGE_NUMBER - 1) dd 0  ; Pages after the kernel image.
+    times (1024 - KERNEL_PAGE_NUMBER - 1) dd 0          ; Pages after the kernel image.
  
-; The linker script specifies _start as the entry point to the kernel and the
+; The linker script specifies start as the entry point to the kernel and the
 ; bootloader will jump to this position once the kernel has been loaded. It
 ; doesn't make sense to return from this function as the bootloader is gone.
 ; Declare _start as a function symbol with the given symbol size.
@@ -108,43 +108,3 @@ section .bss
 align 32
 stack:
     resb STACKSIZE      ; reserve 16k stack on a uint64_t boundary
-
-;set cr0 zero bit we don't need to do this 
-;grub already drops us into protected mode
-global enable_pmode
-enable_pmode:
-  mov eax, cr0
-  or eax, 1
-  mov cr3, eax
-  ret
-
-;checks weather cr0 zero bit is set
-;
-global check_pmode
-check_pmode:
-  mov eax, cr0
-  bt eax, 0
-
-  mov eax, 0
-  jnc .check_pmode__exit
-
-  mov eax, 1
-
-  .check_pmode__exit:
-  ret
-
-;enables paging
-;first argument is page directory address
-global enable_paging
-enable_paging:
-  mov eax, [esp + 4]
-  mov cr3, eax;
-  mov eax, cr0
-
-  mov ecx, cr4
-  or ecx, 0x00000010
-  mov cr4, ecx
-
-  or eax, 0x80000000
-  mov cr0, eax
-  ret
