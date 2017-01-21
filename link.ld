@@ -31,10 +31,7 @@ SECTIONS
   .bss BLOCK(4K) : ALIGN(4K)
   {
     /**(COMMON)*/
-    sbss = .;
     *(.bss)
-    ebss = .;
-    ekernel = .;
   }
 
   /* The compiler may produce other sections, by default it will put them in

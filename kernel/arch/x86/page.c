@@ -1,5 +1,8 @@
 #include "page.h"
 
+#include <assert.h>
+#include <macros.h>
+
 void
 page_init()
 {
@@ -36,6 +39,8 @@ page_init()
 void*
 get_physaddr(void *virtaddr)
 {
+  assert1(ALIGNED(virtaddr, KBYTE(4)));
+
   uint32 pdindex = (uint32)virtaddr >> 22;
   uint32 ptindex = (uint32)virtaddr >> 12 & 0x03FF;
  
@@ -61,7 +66,9 @@ __native_flush_tlb_single(unsigned long addr)
 void 
 map_page(void *physaddr, void *virtaddr, uint32 flags)
 {
-  // Make sure that both addresses are page-aligned.
+  //make sure it is 4kb aligned
+  assert1(ALIGNED(physaddr, KBYTE(4)));
+  assert1(ALIGNED(virtaddr, KBYTE(4)));
  
   uint32 pdindex = (uint32)virtaddr >> 22;
   uint32 ptindex = (uint32)virtaddr >> 12 & 0x03FF;

@@ -6,7 +6,7 @@
 #define PAGE_DIRECTORY_SIZE 1024
 #define PAGE_TABLE_SIZE 1024
 
-//TODO(gio): Wrote frame stack aloccator
+//TODO(gio): Wrote page frame allocator
 
 //TODO(gio): dinamically create page table entries;
 //           add ability to get phys adress maped to virtaual adress.
@@ -18,6 +18,8 @@
 //TODO(gio): implement higher half kernel for userspace 
 //           (http://wiki.osdev.org/Higher_Half_Kernel)
 
+
+//TODO(gio): move this to oage frame allocator
 uint32 page_directory_entry[PAGE_DIRECTORY_SIZE] att_aligned(4096);
 uint32 first_page_table[PAGE_TABLE_SIZE] att_aligned(4096);
 uint32 last_page_table[1024] att_aligned(4096);

@@ -8,15 +8,17 @@ AS=nasm
 ASFLAGS=-f elf
 
 SUBDIRS="arch/x86"
+SUBDIRSCLEAN=$(addsuffix .clean, $(SUBDIRS))
+SUBDIRSBUILD=$(addsuffix .build, $(SUBDIRS))
 
 OBJS= \
 	 keyboard.o kmain.o __start.o
 
-all: $(SUBDIRS) $(OBJS)
+all: $(SUBDIRSBUILD) $(OBJS)
 	cp *.o $(BUILD_ROOT)/OBJS
 
-$(SUBDIRS):
-	$(MAKE) -C $@ BUILD_ROOT="$(BUILD_ROOT)"
+$(SUBDIRSBUILD):
+	$(MAKE) -C $(basename $@) BUILD_ROOT="$(BUILD_ROOT)"
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(CINCLUDES)  $< -o $@
@@ -24,5 +26,8 @@ $(SUBDIRS):
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@
 
-clean:
+clean: $(SUBDIRSCLEAN)
 	rm -rf *.o
+
+$(SUBDIRSCLEAN):
+	$(MAKE) -C $(basename $@) clean

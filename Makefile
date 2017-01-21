@@ -9,11 +9,16 @@ AS=nasm
 ASFLAGS=-f elf
 
 SUBDIRS:=kernel libc
+SUBDIRSCLEAN:=$(addsuffix  .clean ,$(SUBDIRS))
+SUBDIRSBUILD:=$(addsuffix  .build ,$(SUBDIRS))
+
 BUILD_ROOT:=$(shell pwd)
 
-.PHONY all: dir $(SUBDIRS) kernel.elf
+.PHONY all: dir kernel.elf
 
-kernel.elf: $(SUBDIRS)
+.PHONY again: clean run
+
+kernel.elf: $(SUBDIRSBUILD)
 	ld $(LDFLAGS) OBJS/* -o kernel.elf
 
 os.iso: kernel.elf
@@ -31,14 +36,14 @@ os.iso: kernel.elf
 	# 						-o os.iso                       \
 	# 						iso
 
-run: clean dir os.iso
+run: dir os.iso
 		qemu-system-x86_64  -boot d -kernel kernel.elf -m 4096  -monitor stdio
 
 dir:
 	mkdir -p OBJS
 
-$(SUBDIRS):
-	$(MAKE) -C $@ BUILD_ROOT="$(BUILD_ROOT)"
+$(SUBDIRSBUILD):
+	$(MAKE) -C $(basename $@) BUILD_ROOT="$(BUILD_ROOT)"
 
 %.o: %.c
 	$(CC) $(CFLAGS) (CINCLUDES)  $< -o $@
@@ -46,6 +51,9 @@ $(SUBDIRS):
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@
 
-clean:
+clean: $(SUBDIRSCLEAN)
 	rm -rf OBJS
 	rm -rf *.o kernel.elf os.iso
+
+$(SUBDIRSCLEAN):
+	$(MAKE) -C $(basename $@) clean

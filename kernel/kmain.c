@@ -8,7 +8,8 @@
 
 #include <keyboard.h>
 #include <memory.h>
-
+#include <assert.h>
+#include <macros.h>
 
 extern uint32 end_kernel;
 
