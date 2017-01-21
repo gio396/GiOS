@@ -34,17 +34,18 @@ BootPageDirectory:
     ; This page directory entry defines a 4MB page containing the kernel.
     dd 0x00000083
     times (1024 - KERNEL_PAGE_NUMBER - 1) dd 0          ; Pages after the kernel image.
+    ; This pages get unmaped later at page_init in page.c
  
 ; The linker script specifies start as the entry point to the kernel and the
 ; bootloader will jump to this position once the kernel has been loaded. It
 ; doesn't make sense to return from this function as the bootloader is gone.
-; Declare _start as a function symbol with the given symbol size.
 section .text
 STACKSIZE equ 0x4000
 
 start equ (_start - 0xC0000000)
 global start:
 _start:
+    ; Enable paging and load page directory tables into cr3 register
     mov ecx, (BootPageDirectory - KERNEL_VIRTUAL_BASE)
     mov cr3, ecx                                        ; Load Page Directory Base Register.
  
@@ -56,7 +57,7 @@ _start:
     or ecx, 0x80000000                                  ; Set PG bit in CR0 to enable paging.
     mov cr0, ecx
   ; The bootloader has loaded us into 32-bit protected mode on a x86
-  ; machine. Interrupts are disabled. Paging is disabled. The processor
+  ; machine. Interrupts are disabled. Paging is Enabled. The processor
   ; state is as defined in the multiboot standard. The kernel has full
   ; control of the CPU. The kernel can only make use of hardware features
   ; and any code it provides as part of itself. There's no printf
@@ -66,40 +67,31 @@ _start:
   ; itself. It has absolute and complete power over the
   ; machine.
 
+
+  ; Jump to use higher half mapped kernel adresses.
   lea ecx, [StartInHigherHalf]
-  jmp ecx                                               ; NOTE: Must be absolute jump!
+  jmp ecx     
+                                            ; NOTE: Must be absolute jump!
 StartInHigherHalf:
+  ; get rid of identity mapped first 4MB.
   mov dword [BootPageDirectory], 0
   invlpg [0]
+
   ; To set up a stack, we set the esp register to point to the top of our
   ; stack (as it grows downwards on x86 systems). This is necessarily done
   ; in assembly as languages such as C cannot function without a stack.
   mov esp, stack + STACKSIZE
 
+  ; Push boot info into the stack to acess it later as arguments of kmain functions.
   push eax
   push ebx
  
-  ; This is a good place to initialize crucial processor state before the
-  ; high-level kernel is entered. It's best to minimize the early
-  ; environment where crucial features are offline. Note that the
-  ; processor is not fully initialized yet: Features such as floating
-  ; point instructions and instruction set extensions are not initialized
-  ; yet. The GDT should be loaded here. Paging should be enabled here.
-  ; C++ features such as global constructors and exceptions will require
-  ; runtime support to work as well.
+  ; Call c function.
   extern kmain
   call kmain
   ; If the system has nothing more to do, put the computer into an
-  ; infinite loop. To do that:
-  ; 1) Disable interrupts with cli (clear interrupt enable in eflags).
-  ;    They are already disabled by the bootloader, so this is not needed.
-  ;    Mind that you might later enable interrupts and return from
-  ;    kernel_main (which is sort of nonsensical to do).
-  ; 2) Wait for the next interrupt to arrive with hlt (halt instruction).
-  ;    Since they are disabled, this will lock up the computer.
-  ; 3) Jump to the hlt instruction if it ever wakes up due to a
-  ;    non-maskable interrupt occurring or due to system management mode.
-  ; cli ; dissable interupts
+  ; infinite loop
+  
 .hang:  hlt
   jmp .hang
 .end:
