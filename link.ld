@@ -18,23 +18,27 @@ SECTIONS
   /* Read-only data. */
   .rodata BLOCK(4K) : ALIGN(4K)
   {
+    l_srodata = .;
     *(.rodata)
+    l_erodata = .;
   }
 
   /* Read-write data (initialized) */
   .data BLOCK(4K) : ALIGN(4K)
   {
+    l_sdata = .;
     *(.data)
+    l_edata = .;
   }
 
   /* Read-write data (uninitialized) and stack */
   .bss BLOCK(4K) : ALIGN(4K)
   {
     /**(COMMON)*/
-    sbss = .;
+    l_sbss = .;
     *(.bss)
-    ebss = .;
-    ekernel = .;
+    l_ebss = .;
+    l_ekernel = .;
   }
 
   /* The compiler may produce other sections, by default it will put them in

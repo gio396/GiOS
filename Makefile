@@ -32,7 +32,7 @@ os.iso: kernel.elf
 	# 						iso
 
 run: clean dir os.iso
-		qemu-system-x86_64  -boot d -kernel kernel.elf -m 4096  -monitor stdio
+		qemu-system-x86_64  -boot d -kernel kernel.elf -m 256  -monitor stdio
 
 dir:
 	mkdir -p OBJS

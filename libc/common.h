@@ -30,6 +30,8 @@ typedef int32 size_t;
 #define FALSE 0
 #define TRUE !FALSE
 
+#define NULL (void*)(0)
+
 #define set_att(att) __attribute__((att))
 #define set_att_2(att, val) __attribute__((att(val)))
 
