@@ -90,7 +90,7 @@ page_init()
   }
 
   //4 mb map for higher half kernel.
-  page_directory_entry[768] = SY4MB_PAGE;
+  page_directory_entry[KERNEL_VIRTUAL_BASE >> 22] = SY4MB_PAGE;
 
   enable_paging((uint32)page_directory_entry - KERNEL_VIRTUAL_BASE);
 }
