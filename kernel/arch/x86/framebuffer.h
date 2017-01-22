@@ -44,5 +44,4 @@ printk(terminal_state *state, const int8 *format, ...);
 
 extern terminal_state state;
 
-
 #endif

@@ -38,7 +38,8 @@ page_init()
     first_page_table[t] = (t * 0x1000) | 3;
   }
 
-  page_directory_entry[768] = ((uint32)first_page_table - KERNEL_VIRTUAL_BASE) | 3;
+  page_directory_entry[KERNEL_VIRTUAL_BASE >> 22] = 
+    ((uint32)first_page_table - KERNEL_VIRTUAL_BASE) | 3;
 
   enable_paging((uint32)page_directory_entry - KERNEL_VIRTUAL_BASE);
 }

@@ -76,9 +76,14 @@ StartInHigherHalf:
   ; in assembly as languages such as C cannot function without a stack.
   mov esp, stack + STACKSIZE
 
-  push eax
+  ; push mboot info structure address but first we must transform it from 
+  ; phys address to virtual.
+  add ebx, KERNEL_VIRTUAL_BASE
   push ebx
- 
+
+  ; push multoboot magic number
+  push eax
+   
   ; This is a good place to initialize crucial processor state before the
   ; high-level kernel is entered. It's best to minimize the early
   ; environment where crucial features are offline. Note that the
