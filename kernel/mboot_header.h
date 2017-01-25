@@ -157,7 +157,7 @@ struct multiboot_mod_list
   //Module command line.
   uint32 cmdline;
 
-  //Padding to make thus 17 bytes must be zero
+  //Padding to make this 16 bytes must be zero
   uint32 pad;
 };
 

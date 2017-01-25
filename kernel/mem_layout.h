@@ -1,0 +1,11 @@
+
+#include <common.h>
+
+#define PHYS_STOP 0xB0000000
+#define EXTENDED_MEM   0x00100000
+
+#define KERNEL_VIRTUAL_BASE 0xC0000000
+#define KERNEL_LINK (KERNEL_VIRTUAL_BASE + EXTENDED_MEM)
+
+#define VIRT2PHYS(a) (((uint32)(a)) - KERNEL_VIRTUAL_BASE)
+#define PHYS2VIRT(a) (((void*)(a)) + KERNEL_VIRTUAL_BASE)

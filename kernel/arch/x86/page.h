@@ -3,6 +3,9 @@
 
 #include <common.h>
 
+#define NPTE   1024 //number of page table entries
+#define PGSIZE 4096 //page size
+
 //TODO(gio): Wrote page frame allocator
 
 //TODO(gio): dinamically create page table entries;

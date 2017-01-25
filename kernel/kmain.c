@@ -22,6 +22,18 @@ extern const uint32 l_sbss;
 extern const uint32 l_ebss;
 extern const uint32 l_ekernel;
 
+static_assert(sizeof(uint8)  == 1, "Should be 1 byte(s).");
+static_assert(sizeof(uint16) == 2, "Should be 2 byte(s).");
+static_assert(sizeof(uint32) == 4, "Should be 4 byte(s).");
+static_assert(sizeof(uint64) == 8, "Should be 8 byte(s).");
+static_assert(sizeof(int8)   == 1, "Should be 1 byte(s).");
+static_assert(sizeof(int16)  == 2, "Should be 2 byte(s).");
+static_assert(sizeof(int32)  == 4, "Should be 4 byte(s).");
+static_assert(sizeof(int64)  == 8, "Should be 8 byte(s).");
+static_assert(sizeof(b8)     == 1, "Should be 1 byte(s).");
+static_assert(sizeof(b16)    == 2, "Should be 2 byte(s).");
+static_assert(sizeof(b32)    == 4, "Should be 4 byte(s).");
+
 void 
 kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
 {
@@ -37,12 +49,12 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
     printk(&state, "Error wrong multiboot magic number. halting...\n");
     return;    
   }
-
+  
+  page_init();
   gdt_install();
   idt_install();
   irq_install();
   keyboard_install(0);
-  page_init();
 
   printk(&state, "\n");
   printk(&state, "read only data [0x%8X, 0x%8X]\n", &l_srodata, &l_erodata);

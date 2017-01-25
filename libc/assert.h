@@ -5,14 +5,15 @@
 
 #define assert_break *(uint32*)(0) = 0
 
-#define assert1(cond) cond != TRUE ? assert_break:(void)(0)
-
+#define assert1(cond) !(cond) ? assert_break:(void)(0)
 
 #define assertS(cond, state, format) \
-        cond != TRUE ? printk(state, format), assert_break : (void)(0)
+        cond ? printk(state, format), assert_break : (void)(0)
 
 #define assertK(cond, state, format, ...) \
-        cond != TRUE ? printk(state, format, __VA_ARGS__), assert_break : (void)(0)
+        cond ? printk(state, format, __VA_ARGS__), assert_break : (void)(0)
+
+#define static_assert(cond, msg) _Static_assert(cond, msg)
 
 
 #endif

@@ -3,12 +3,11 @@
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/io.h>
 
+#include <mem_layout.h>
+
 #include <macros.h>
-
-
-#define PAGE_DIRECTORY_SIZE 1024
-#define PAGE_TABLE_SIZE 1024
-#define KERNEL_VIRTUAL_BASE 0xC0000000
+#include <assert.h>
+#include <memory.h>
 
 extern const uint32 l_ekernel;
 uint32 *page_directory_entry;
@@ -73,6 +72,22 @@ uint32 *first_page_table;
 #define EMPTY_PRESENT(a)   SEG_ADR(a) | SEG_AVL(0) | SEG_IGN(0) | SEG_PGS(0) |\
                            SEG_DRT(0) | SEG_ACC(0) | SEG_CHD(0) | SEG_WRT(0) |\
                            SEG_USU(0) | SEG_RDW(1) | SEG_PRE(1)
+
+
+void 
+free_range(void *begin, void *end)
+{
+  assert1(begin);
+  assert1(end);
+  assert1(ALIGNED(begin, kb(4)));
+  assert1(ALIGNED(begin, kb(4)));
+
+  uint8* p = (uint8*)(begin);
+
+  for(; p <= (uint8*)end; p+=PGSIZE)
+    kfree(p);
+}
+
 void
 page_init()
 {
@@ -83,20 +98,70 @@ page_init()
   printk(&state, "Page directory entries addr: 0x%8X\n", page_directory_entry);
   printk(&state, "First page table addr:       0x%8X\n", first_page_table);
 
+  memset(page_directory_entry, 0, kb(4));
+
   //empty out all pages
-  for (int32 p = 0; p < PAGE_DIRECTORY_SIZE; p++)
+  for (int32 p = 0; p < (int32)(KERNEL_VIRTUAL_BASE >> 22); p++)
   {
-    page_directory_entry[p] = EMPTY_PAGE;
+    page_directory_entry[p] = (VIRT2PHYS(first_page_table) + p * 1024) | 3;
   }
+
 
   //4 mb map for higher half kernel.
   page_directory_entry[KERNEL_VIRTUAL_BASE >> 22] = SY4MB_PAGE;
+  page_directory_entry[(KERNEL_VIRTUAL_BASE >> 22) + 1] = (SEG_ADR(0x400) | SY4MB_PAGE);
 
   enable_paging((uint32)page_directory_entry - KERNEL_VIRTUAL_BASE);
+
+  memset(first_page_table, 0, mb(4));
+
+  for (int p = 0; p < 765; p++)
+  {
+    for(int j = 0; j < 1024; j++)
+    {
+      first_page_table[p * 1024 + j] = EMPTY_PRESENT((p + 2) * 1024 + j);
+    }
+  }
+
+  enable_paging((uint32)page_directory_entry - KERNEL_VIRTUAL_BASE);
+
+
+  free_range((void*)(8 * 1024 * 1024), (void*)(mb(10)));
 }
+
+struct free_page_list
+{
+  struct free_page_list *next;
+};
+
+struct
+{
+  struct free_page_list *list;
+} kmem;
 
 void*
 kalloc()
 {
-  return NULL; 
+  struct free_page_list *head;
+  head = kmem.list;
+
+  if(head)
+  {
+    kmem.list = head->next;
+  }
+
+  return (void*)(head); 
+}
+
+void
+kfree(void* v)
+{
+  assert1(v);
+  assert1(ALIGNED((uint32)v, kb(4)));
+
+  struct free_page_list *head;
+
+  head = (struct free_page_list*)(v);
+  head->next = kmem.list;
+  kmem.list = head;
 }
