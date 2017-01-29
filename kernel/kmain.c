@@ -6,6 +6,7 @@
 #include <arch/x86/irq.h>
 #include <arch/x86/io.h>
 #include <arch/x86/page.h>
+#include <arch/x86/cpuid.h>
 
 #include <keyboard.h>
 #include <mboot_header.h>
@@ -13,6 +14,7 @@
 #include <memory.h>
 #include <assert.h>
 #include <macros.h>
+
 
 extern const uint32 l_srodata;
 extern const uint32 l_erodata;
@@ -50,5 +52,4 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   printk(&state, "bss            [0x%8X, 0x%8X]\n", &l_sbss, &l_ebss);
   printk(&state, "end of kernel  0x%8X\n", &l_ekernel);
   printk(&state, "\n"); 
-
 }
