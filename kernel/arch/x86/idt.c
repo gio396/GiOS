@@ -140,9 +140,14 @@ idt_install()
   idt_set_gate(29, (uint32)isr29, 0x08, IDT_INTR_PL0);
   idt_set_gate(30, (uint32)isr30, 0x08, IDT_INTR_PL0);
   idt_set_gate(31, (uint32)isr31, 0x08, IDT_INTR_PL0);
+  
+  idt_load((int32)&idtp);
+  printk(&state, "Pushed IDTP at 0x%8X\n", (int32)&idtp);
+}
 
-
-  //irq gates irq is loaded later at irq_isntall in irq.c
+void
+set_irq_gates()
+{
   idt_set_gate(32, (uint32)irq0,  0x08, IDT_INTR_PL0);
   idt_set_gate(33, (uint32)irq1,  0x08, IDT_INTR_PL0);
   idt_set_gate(34, (uint32)irq2,  0x08, IDT_INTR_PL0);
@@ -159,9 +164,6 @@ idt_install()
   idt_set_gate(45, (uint32)irq13, 0x08, IDT_INTR_PL0);
   idt_set_gate(46, (uint32)irq14, 0x08, IDT_INTR_PL0);
   idt_set_gate(47, (uint32)irq15, 0x08, IDT_INTR_PL0);
-  
-  idt_load((int32)&idtp);
-  printk(&state, "Pushed IDTP at 0x%8X\n", (int32)&idtp);
 }
 
 const char* idt_error_desc[] =

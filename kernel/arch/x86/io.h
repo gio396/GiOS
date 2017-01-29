@@ -24,4 +24,10 @@ idt_load(uint32 idt_ptr);
 int32 
 gdt_flush(uint32 gdt_ptr);
 
+void 
+init_serial();
+
+void 
+write_serial(uint8 a);
+
 #endif

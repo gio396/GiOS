@@ -108,5 +108,7 @@ irq_install(void)
   //first 32 interupts are reserved for cpu
   irq_remap(32, 40);
 
+  set_irq_gates();
+
   sti_enable();
 }

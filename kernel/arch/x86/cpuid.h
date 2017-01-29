@@ -11,7 +11,7 @@
 //EBX Brand Index. CLFLUSH line size, Maximum number of accessable IDs, Initial APIC ID
 //ECX Feature information see below
 //EDX Feature information see below
-#define CPUID_GET_GETFEATURES 0x1 
+#define CPUID_GET_FEATURES    0x1 
 
 //returns cache and TLB information
 #define CPUID_GET_LB          0x2

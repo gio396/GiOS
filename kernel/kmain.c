@@ -27,8 +27,13 @@ extern const uint32 l_ekernel;
 void 
 kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
 {
-  (void)(mboot_magic);
   (void)(mboot_info);
+  uint32 eax, ebx, edx, ecx;
+  cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
+
+  // #ifdef QEMU_DBG
+  init_serial();
+  // #endif
 
   terminal_init(&state);
   printk(&state, "Init done\n");
@@ -37,13 +42,26 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   if (mboot_magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
     printk(&state, "Error wrong multiboot magic number. halting...\n");
-    return;    
+
+    halt();    
   }
 
   page_init();  
   gdt_install();
   idt_install();
-  irq_install();
+
+  #if 0
+  if((edx & CPUID_FEAT_EDX_APIC))
+  {
+    //apic
+  }
+  else
+  #endif
+  {
+    printk(&state, "AIPC not available using default IPC\n");
+    irq_install();  
+  }
+
   keyboard_install(0);
 
   printk(&state, "\n");
@@ -51,5 +69,5 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   printk(&state, "data           [0x%8X, 0x%8X]\n", &l_sdata, &l_edata);
   printk(&state, "bss            [0x%8X, 0x%8X]\n", &l_sbss, &l_ebss);
   printk(&state, "end of kernel  0x%8X\n", &l_ekernel);
-  printk(&state, "\n"); 
+  printk(&state, "\n");
 }

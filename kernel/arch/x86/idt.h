@@ -29,4 +29,7 @@ struct idt_ptr   idtp;
 void
 idt_install();
 
+void
+set_irq_gates();
+
 #endif

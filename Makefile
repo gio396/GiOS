@@ -39,10 +39,10 @@ os.iso: kernel.elf
 	# 						iso
 
 run: clean dir os.iso
-		qemu-system-x86_64  -boot d -kernel kernel.elf -m 256  -monitor stdio
+		qemu-system-x86_64  -boot d -kernel kernel.elf -m 256  -serial stdio
 
 qemu_dbg: clean dir os.iso
-		qemu-system-x86_64 -S -boot d -kernel kernel.elf -m 256  -monitor stdio
+		qemu-system-x86_64 -S -boot d -kernel kernel.elf -m 256  -monitor stdio -serial file:serial.log
 
 gdb:
 	$(GDB) --quiet kernel.sym -ex "target remote 127.0.0.1:1234"

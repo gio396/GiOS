@@ -289,27 +289,34 @@ terminal_next_line(struct terminal_state *state)
 }
 
 void 
-terminal_put_char(struct terminal_state *state, int8 c)
+terminal_put_char(struct terminal_state *st, int8 c)
 {
-  if(state == current_state && current_state->terminal_buffer != vga_buffer)
+  if(st == current_state && current_state->terminal_buffer != vga_buffer)
     terminal_load_head();
+
+  // #ifdef QEMU_DBG
+  if(st == &state)
+  {
+    write_serial(c);
+  }
+  // #endif
 
   switch(c)
   {
     CASE(
-      terminal_delete_one(state);
+      terminal_delete_one(st);
     , '\b');
 
     CASE(
-      terminal_next_line(state);
+      terminal_next_line(st);
     , '\n');
 
     default:
     {
-      int32 index = terminal_advance_one(state);
-      int16 val = VGA_CHAR_COLOR(c, state->terminal_color);
+      int32 index = terminal_advance_one(st);
+      int16 val = VGA_CHAR_COLOR(c, st->terminal_color);
 
-      terminal_set_char(state, index, val);
+      terminal_set_char(st, index, val);
     }
   }
 }
@@ -323,16 +330,8 @@ terminal_put_string(struct terminal_state *state, const int8 *s)
   while (*it)
   {
     c = *(it++);
-
-    switch(c)
-    {
-      CASE( 
-        terminal_next_line(state);
-      , '\n');
-
-      default:
-        terminal_put_char(state, c);
-    }
+    
+    terminal_put_char(state, c);
   }
 }
 
@@ -474,10 +473,6 @@ printk(struct terminal_state *state, const int8 *format, ...)
     else if(*format == '\\')
     {
       terminal_put_char(state, *format);
-    }
-    else if(*format == '\n')
-    {
-      terminal_next_line(state);
     }
     else
     {
