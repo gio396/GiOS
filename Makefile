@@ -1,4 +1,6 @@
 CC=gcc
+GDB=gdb
+
 CFLAGS=-m32 -O3 -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding -ggdb
 CINCLUDES=-I kernel/  -I libc/
 
@@ -38,6 +40,12 @@ os.iso: kernel.elf
 
 run: clean dir os.iso
 		qemu-system-x86_64  -boot d -kernel kernel.elf -m 256  -monitor stdio
+
+qemu_dbg: clean dir os.iso
+		qemu-system-x86_64 -S -boot d -kernel kernel.elf -m 256  -monitor stdio
+
+gdb:
+	$(GDB) --quiet kernel.sym -ex "target remote 127.0.0.1:1234"
 
 dir:
 	mkdir -p OBJS

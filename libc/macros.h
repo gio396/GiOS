@@ -10,7 +10,8 @@
 //count number of arguments up to 64
 #define __VA_PREFIX_SUFFIX__ ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,0
 #define __VA_NUM_ARGS__(...) __VA_NUM_ARGS_I__(__VA_PREFIX##__VA_ARGS__##_SUFFIX__)
-#define __VA_NUM_ARGS_I__(...) __VA_NUM_ARGS_II__ __VA_PASS__(__VA_ARGS__,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1)
+#define __VA_NUM_ARGS_NZ__(...) __VA_NUM_ARGS_I__(__VA_ARGS__)
+#define __VA_NUM_ARGS_I__(...) __VA_NUM_ARGS_II__(__VA_ARGS__,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1)
 #define __VA_NUM_ARGS_II__(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30,a31,a32,a33,a34,a35,a36,a37,a38,a39,a40,a41,a42,a43,a44,a45,a46,a47,a48,a49,a50,a51,a52,a53,a54,a55,a56,a57,a58,a59,a60,a61,a62,a63,a64,a,...) a
 
 //join two args (can be macros)
@@ -125,5 +126,206 @@
 #define bt(x) (x) //byte
 #define kb(x) bt(x) * 1024
 #define mb(x) kb(x) * 1024
+
+#define EXPAND_CASE_1(c0)\
+case c0:
+#define EXPAND_CASE_2(c0, c1)\
+case c0: \
+case c1:
+#define EXPAND_CASE_3(c0, c1, c2)\
+case c0: case c1: \
+case c2:
+#define EXPAND_CASE_4(c0, c1, c2, c3)\
+case c0: case c1: case c2: \
+case c3:
+#define EXPAND_CASE_5(c0, c1, c2, c3, c4)\
+case c0: case c1: case c2: case c3: \
+case c4:
+#define EXPAND_CASE_6(c0, c1, c2, c3, c4, c5)\
+case c0: case c1: case c2: case c3: case c4: \
+case c5:
+#define EXPAND_CASE_7(c0, c1, c2, c3, c4, c5, c6)\
+case c0: case c1: case c2: case c3: case c4: case c5: \
+case c6:
+#define EXPAND_CASE_8(c0, c1, c2, c3, c4, c5, c6, c7)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: \
+case c7:
+#define EXPAND_CASE_9(c0, c1, c2, c3, c4, c5, c6, c7, c8)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: \
+case c8:
+#define EXPAND_CASE_10(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: \
+case c9:
+#define EXPAND_CASE_11(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: \
+case c10:
+#define EXPAND_CASE_12(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: \
+case c11:
+#define EXPAND_CASE_13(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: \
+case c12:
+#define EXPAND_CASE_14(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: \
+case c13:
+#define EXPAND_CASE_15(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: \
+case c14:
+#define EXPAND_CASE_16(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: \
+case c15:
+#define EXPAND_CASE_17(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: \
+case c16:
+#define EXPAND_CASE_18(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: \
+case c17:
+#define EXPAND_CASE_19(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: \
+case c18:
+#define EXPAND_CASE_20(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: \
+case c19:
+#define EXPAND_CASE_21(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: \
+case c20:
+#define EXPAND_CASE_22(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: \
+case c21:
+#define EXPAND_CASE_23(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: \
+case c22:
+#define EXPAND_CASE_24(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: \
+case c23:
+#define EXPAND_CASE_25(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: \
+case c24:
+#define EXPAND_CASE_26(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: \
+case c25:
+#define EXPAND_CASE_27(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: \
+case c26:
+#define EXPAND_CASE_28(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: \
+case c27:
+#define EXPAND_CASE_29(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: \
+case c28:
+#define EXPAND_CASE_30(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: \
+case c29:
+#define EXPAND_CASE_31(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: \
+case c30:
+#define EXPAND_CASE_32(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: \
+case c31:
+#define EXPAND_CASE_33(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: \
+case c32:
+#define EXPAND_CASE_34(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: \
+case c33:
+#define EXPAND_CASE_35(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: \
+case c34:
+#define EXPAND_CASE_36(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: \
+case c35:
+#define EXPAND_CASE_37(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: \
+case c36:
+#define EXPAND_CASE_38(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: \
+case c37:
+#define XPAND_CASE_39(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: \
+case c38:
+#define EXPAND_CASE_40(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: \
+case c39:
+#define EXPAND_CASE_41(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: \
+case c40:
+#define EXPAND_CASE_42(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: \
+case c41:
+#define EXPAND_CASE_43(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: \
+case c42:
+#define EXPAND_CASE_44(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: \
+case c43:
+#define EXPAND_CASE_45(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: \
+case c44:
+#define EXPAND_CASE_46(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: \
+case c45:
+#define EXPAND_CASE_47(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: \
+case c46:
+#define EXPAND_CASE_48(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: \
+case c47:
+#define EXPAND_CASE_49(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: \
+case c48:
+#define EXPAND_CASE_50(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: \
+case c49:
+#define EXPAND_CASE_51(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: \
+case c50:
+#define EXPAND_CASE_52(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: \
+case c51:
+#define EXPAND_CASE_53(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: \
+case c52:
+#define EXPAND_CASE_54(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: \
+case c53:
+#define EXPAND_CASE_55(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: \
+case c54:
+#define EXPAND_CASE_56(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: \
+case c55:
+#define EXPAND_CASE_57(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: case c55: \
+case c56:
+#define EXPAND_CASE_58(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56, c57)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: case c55: case c56: \
+case c57:
+#define EXPAND_CASE_59(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56, c57, c58)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: case c55: case c56: case c57: \
+case c58:
+#define EXPAND_CASE_60(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56, c57, c58, c59)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: case c55: case c56: case c57: case c58: \
+case c59:
+#define EXPAND_CASE_61(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56, c57, c58, c59, c60)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: case c55: case c56: case c57: case c58: case c59: \
+case c60:
+#define EXPAND_CASE_62(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56, c57, c58, c59, c60, c61)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: case c55: case c56: case c57: case c58: case c59: case c60: \
+case c61:
+#define EXPAND_CASE_63(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56, c57, c58, c59, c60, c61, c62)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: case c55: case c56: case c57: case c58: case c59: case c60: case c61: \
+case c62:
+#define EXPAND_CASE_64(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56, c57, c58, c59, c60, c61, c62, c63)\
+case c0: case c1: case c2: case c3: case c4: case c5: case c6: case c7: case c8: case c9: case c10: case c11: case c12: case c13: case c14: case c15: case c16: case c17: case c18: case c19: case c20: case c21: case c22: case c23: case c24: case c25: case c26: case c27: case c28: case c29: case c30: case c31: case c32: case c33: case c34: case c35: case c36: case c37: case c38: case c39: case c40: case c41: case c42: case c43: case c44: case c45: case c46: case c47: case c48: case c49: case c50: case c51: case c52: case c53: case c54: case c55: case c56: case c57: case c58: case c59: case c60: case c61: case c62: \
+case c63:
+
+
+#define CASE(code, ...)\
+  __VA_JOIN__(EXPAND_CASE_,__VA_NUM_ARGS_NZ__(__VA_ARGS__))(__VA_ARGS__)\
+  {\
+    code\
+  }\
+  break
+
 
 #endif

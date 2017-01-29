@@ -3,10 +3,6 @@
 
 #include <common.h>
 
-#define VGA_WIDTH  80
-#define VGA_HEIGHT 25
-#define VGA_SIZE   VGA_WIDTH * VGA_HEIGHT * 16
-
 #define COLOR_BLACK          (int8)(0)
 #define COLOR_BLUE           (int8)(1)
 #define COLOR_GREEN          (int8)(2)
@@ -24,24 +20,65 @@
 #define COLOR_LIGHT_BROWN    (int8)(14)
 #define COLOR_LIGHT_WHITE    (int8)(15)
 
-typedef struct 
+#define VGA_WIDTH        80
+#define VGA_HEIGHT       25
+#define VGA_LENGTH       VGA_WIDTH * VGA_HEIGHT 
+
+#define SEG_WRITE(x)     (x) << 0
+#define SEG_STLIMIT(x)   (x) << 1
+#define SEG_LIMIT(x)     (x) << 2
+
+#define SEG_WRITE_ENABLED 0x01
+#define SEG_LIMIT_ENABLED 0x02
+#define SEG_GET_LIMIT     0xFC
+
+#define DEFAULT_TERMINAL   SEG_WRITE(1) | SEG_STLIMIT(0) | SEG_LIMIT(0)
+#define SECONDARY_TERMINAL SEG_WRITE(0) | SEG_STLIMIT(1) | SEG_LIMIT(20)
+
+//terminal flags
+//8         2    1   0
+//[LMT------|STL-|wr-]
+
+struct terminal_back_list
 {
-  int32 terminal_row;
-  int32 terminal_column;
-  uint8 terminal_color;
+  struct terminal_back_list *prev;
+  struct terminal_back_list *next;
+
+  uint16 left;
+  uint16 buffer[VGA_LENGTH];
+};
+
+struct terminal_state 
+{
+  int32   terminal_row;
+  int32   terminal_column;
+  uint8   terminal_color;
+  uint8   terminal_flags;
   uint16* terminal_buffer;
-} terminal_state;
 
-void terminal_put_char(terminal_state *state, const int8 c);
-void terminal_init(terminal_state *state);
-void terminal_put_string(terminal_state *state, const int8 *s);
+  uint8   terminal_current_length; 
+  struct  terminal_back_list *cur;
+  struct  terminal_back_list *head;
+};
 
-int32
-write(uint8 * buffer, uint8 *data, int32 size);
+void 
+terminal_put_char(struct terminal_state *state, const int8 c);
+
+void 
+terminal_init(struct terminal_state *state);
+
+void 
+terminal_put_string(struct terminal_state *state, const int8 *s);
 
 void
-printk(terminal_state *state, const int8 *format, ...);
+terminal_load_prev();
 
-extern terminal_state state;
+void
+terminal_load_next();
+
+void
+printk(struct terminal_state *state, const int8 *format, ...);
+
+extern struct terminal_state state;
 
 #endif

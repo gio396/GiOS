@@ -5,6 +5,8 @@
 #include <arch/x86/irq.h>
 #include <arch/x86/framebuffer.h>
 
+#include <macros.h>
+
 unsigned char kbdlt[128] =
 {
    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
@@ -27,7 +29,7 @@ unsigned char kbdlt[128] =
     0,  /* 69 - Num lock*/
     0,  /* Scroll Lock */
     0,  /* Home key */
-    0,  /* Up Arrow */
+    67,  /* Up Arrow */
     0,  /* Page Up */
    '-',
     0,  /* Left Arrow */
@@ -35,7 +37,7 @@ unsigned char kbdlt[128] =
     0,  /* Right Arrow */
    '+',
     0,  /* 79 - End key*/
-    0,  /* Down Arrow */
+    68,  /* Down Arrow */
     0,  /* Page Down */
     0,  /* Insert Key */
     0,  /* Delete Key */
@@ -59,7 +61,19 @@ keyboard_handler(/*const union biosregs *ireg*/)
   }
   else
   {
-    terminal_put_char(&state, kbdlt[scancode]);
+    switch(kbdlt[scancode])
+    {
+      CASE(
+        terminal_load_prev();
+      , 67);
+
+      CASE(
+        terminal_load_next();
+      , 68);
+
+      default:
+        terminal_put_char(&state, kbdlt[scancode]);
+    }
   }
 }
 

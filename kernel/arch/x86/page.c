@@ -14,7 +14,7 @@ uint32 *page_directory_entry;
 uint32 *first_page_table;
 
 //single table directory entry
-//    32         11    9  8  7  6  5  4  3  2  1  0
+//    31         11    9  8  7  6  5  4  3  2  1  0
 //PDT [ADDR-*20*-|AVL--|G-|S-|0-|A-|D-|W-|U-|R-|P-]
 //ADDR: Physical adress of array of page table entries.
 //AVL: not used by processor OS can use it to store information.
@@ -30,7 +30,7 @@ uint32 *first_page_table;
 //   If present bit is not set os can use rest of 31 bits to store information.
 
 //singlse Page table entry
-//    32         11    9  8  7  6  5  4  3  2  1  0
+//    31         11    9  8  7  6  5  4  3  2  1  0
 //PTE [ADDR-*20*-|AVL--|G-|0-|D-|A-|C-|W-|U-|R-|P-]
 //ADDR: Physical adress where virtual adress should be mapped to.
 //AVL: not used by processor OS can use it to store information.
@@ -48,8 +48,8 @@ uint32 *first_page_table;
 //   If present bit is not set os can use rest of 31 bits to store information.
 
 
-#define SEG_ADR(x) ((x) << 0x0C) //PDT PTE
-#define SEG_AVL(x) ((x) << 0x0A) //PDT PTE
+#define SEG_ADR(x) ((x)) //PDT PTE
+#define SEG_AVL(x) ((x) << 0x09) //PDT PTE
 #define SEG_IGN(x) ((x) << 0x08) //0   PTE
 #define SEG_PGS(x) ((x) << 0x07) //PDT 0
 #define SEG_DRT(x) ((x) << 0x06) //0   PTE 
@@ -77,14 +77,14 @@ uint32 *first_page_table;
 void 
 free_range(void *begin, void *end)
 {
-  assert1(begin);
-  assert1(end);
-  assert1(ALIGNED(begin, kb(4)));
-  assert1(ALIGNED(begin, kb(4)));
+  // assert1(begin);
+  // assert1(end);
+  // assert1(ALIGNED(begin, kb(4)));
+  // assert1(ALIGNED(begin, kb(4)));
 
   uint8* p = (uint8*)(begin);
 
-  for(; p <= (uint8*)end; p+=PGSIZE)
+  for(; p <= (uint8*)end; p+=PGSIZE) 
     kfree(p);
 }
 
@@ -101,32 +101,30 @@ page_init()
   memset(page_directory_entry, 0, kb(4));
 
   //empty out all pages
-  for (int32 p = 0; p < (int32)(KERNEL_VIRTUAL_BASE >> 22); p++)
+  for (uint32 p = 0; p < (int32)(KERNEL_VIRTUAL_BASE >> 22); p++)
   {
-    page_directory_entry[p] = (VIRT2PHYS(first_page_table) + p * 1024) | 3;
+    page_directory_entry[p] = EMPTY_PRESENT(VIRT2PHYS(first_page_table) + p * 0x1000);
   }
-
 
   //4 mb map for higher half kernel.
   page_directory_entry[KERNEL_VIRTUAL_BASE >> 22] = SY4MB_PAGE;
-  page_directory_entry[(KERNEL_VIRTUAL_BASE >> 22) + 1] = (SEG_ADR(0x400) | SY4MB_PAGE);
+  page_directory_entry[(KERNEL_VIRTUAL_BASE >> 22) + 1] = (SEG_ADR(0x400000) | SY4MB_PAGE);
 
   enable_paging((uint32)page_directory_entry - KERNEL_VIRTUAL_BASE);
 
   memset(first_page_table, 0, mb(4));
 
-  for (int p = 0; p < 765; p++)
+  for (uint32 p = 0; p < (int32)(KERNEL_VIRTUAL_BASE >> 22); p++)
   {
-    for(int j = 0; j < 1024; j++)
+    for(uint32 j = 0; j < 1024; j++)
     {
-      first_page_table[p * 1024 + j] = EMPTY_PRESENT((p + 2) * 1024 + j);
+      first_page_table[p * 0x400 + j] = EMPTY_PRESENT((p + 2) * 0x400000 + 0x1000 * (j + 1));
     }
   }
 
-  enable_paging((uint32)page_directory_entry - KERNEL_VIRTUAL_BASE);
+  first_page_table[0] = EMPTY_PAGE;
 
-
-  free_range((void*)(8 * 1024 * 1024), (void*)(mb(10)));
+  free_range((void*)(kb(4)), (void*)(mb(10)));
 }
 
 struct free_page_list
@@ -156,8 +154,9 @@ kalloc()
 void
 kfree(void* v)
 {
-  assert1(v);
-  assert1(ALIGNED((uint32)v, kb(4)));
+  // (void)(v);
+  // assert1(v);
+  // assert1(ALIGNED((uint32)v, kb(4)));
 
   struct free_page_list *head;
 

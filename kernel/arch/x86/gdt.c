@@ -6,7 +6,7 @@
 
 
 #define SEG_PRES(x) ((x) << 0x0F) // 1 present 0 not present
-#define SEG_PRIV(x) ((x) << 0x0E) // privilage ring (0 - 3)
+#define SEG_PRIV(x) ((x) << 0x0D) // privilage ring (0 - 3)
 #define SEG_DSCT(x) ((x) << 0x0C) // 1 system 0 code\data
 #define SEG_GRAN(x) ((x) << 0x07) // 1 4kb mode 0 1byte mode
 #define SEG_OPSZ(x) ((x) << 0x06) // 1 32bit 0 16bit

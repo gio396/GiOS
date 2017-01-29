@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-m32 -O3 -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding -ggdb
+CFLAGS=-m32 -O0 -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding -ggdb
 CINCLUDES=-I ./ -I ../libc/
 
 LDFLAGS=-T link.ld -melf_i386 
