@@ -80,7 +80,7 @@ internal void
 irq_remap(uint32 offset1, uint32 offset2)
 {
   uint8 m1, m2;
- 
+
   //save masks.
   m1 = inb(PIC1_DAT);
   m2 = inb(PIC2_DAT);
@@ -111,4 +111,18 @@ irq_install(void)
   set_irq_gates();
 
   sti_enable();
+}
+
+void
+get_interrupt_masks(uint8 *mask1, uint8 *mask2)
+{
+  *mask1 = inb(PIC1_DAT);
+  *mask2 = inb(PIC2_DAT);
+}
+
+void
+set_interrupt_masks(uint8 mask1, uint8 mask2)
+{
+  outb(PIC1_DAT, mask1);
+  outb(PIC2_DAT, mask2);
 }

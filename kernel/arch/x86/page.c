@@ -73,7 +73,7 @@ uint32 *first_page_table;
                            SEG_DRT(0) | SEG_ACC(0) | SEG_CHD(0) | SEG_WRT(0) |\
                            SEG_USU(0) | SEG_RDW(1) | SEG_PRE(1)
 
-#define APIC_VIRTUAL_BASE  0xFEC00000
+#define APIC_VIRTUAL_BASE  0xFEE00000
 
 
 void 
@@ -110,7 +110,7 @@ page_init()
 
   //enable apic page directory entry
 
-  page_directory_entry[(APIC_VIRTUAL_BASE) >> 22] = EMPTY_PRESENT(VIRT2PHYS(first_page_table) + ((APIC_VIRTUAL_BASE) >> 22) * 0x1000);
+  page_directory_entry[(APIC_VIRTUAL_BASE) >> 22] = (SEG_ADR(0xFEC00000) | SY4MB_PAGE | SEG_CHD(1));
 
 
   //4 mb map for higher half kernel.
@@ -125,7 +125,7 @@ page_init()
   {
     for(uint32 j = 0; j < 1024; j++)
     {
-      first_page_table[p * 0x400 + j] = EMPTY_PRESENT((p + 2) * 0x400000 + 0x1000 * (j + 1));
+      first_page_table[p * 0x400 + j] = EMPTY_PRESENT((p) * 0x400000 + 0x1000 * j);
     }
   }
 
@@ -136,7 +136,7 @@ page_init()
                                                                          SEG_DRT(0) | SEG_ACC(0) | SEG_CHD(1) | SEG_WRT(0) |
                                                                          SEG_USU(1) | SEG_RDW(1) | SEG_PRE(1);
 
-  free_range((void*)(kb(4)), (void*)(mb(10)));
+  free_range((void*)(mb(8)), (void*)(mb(9)));
 }
 
 struct free_page_list

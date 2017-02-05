@@ -18,4 +18,7 @@ atoi(const int8* str);
 int8*
 to_upper(int8* str);
 
+b32
+strncmp(const int8 *str1, const int8 *str2, size_t num);
+
 #endif

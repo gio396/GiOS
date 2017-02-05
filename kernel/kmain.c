@@ -8,6 +8,7 @@
 #include <arch/x86/page.h>
 #include <arch/x86/cpuid.h>
 #include <arch/x86/apic.h>
+#include <arch/x86/ACPI.h>
 
 #include <keyboard.h>
 #include <mboot_header.h>
@@ -29,7 +30,9 @@ void
 kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
 {
   (void)(mboot_info);
+  uint8 mask1, mask2;
   uint32 eax, ebx, edx, ecx;
+
   cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
 
   // #ifdef QEMU_DBG
@@ -50,18 +53,20 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   page_init();  
   gdt_install();
   idt_install();
+  find_RSDP();
 
-  #if 0
   if((edx & CPUID_FEAT_EDX_APIC))
   {
-    //apic
-  }
-  else
-  #endif
-  {
-    printk(&state, "AIPC not available using default IPC\n");
-    irq_install();  
-  }
+    apic_enable(APIC_LOCATION);
+
+    //Save previous masks
+    get_interrupt_masks(&mask1, &mask2);
+
+    //Mask all the PIC interrupts
+    // set_interrupt_masks(0xFF, 0xFF);
+  }  
+
+  irq_install();  
 
   keyboard_install(0);
 
@@ -75,7 +80,6 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   int8 buffer[17];
   buffer[16] = '\0';
   cpuid_string(CPUID_GET_VENDOR, buffer);
-  apic_enable();
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
 }

@@ -83,7 +83,7 @@ def_irq(15);
 void 
 idt_set_gate(int32 num, uint32 base, uint16 sel, uint8 flags)
 {
-  printk(&state, "Setting idt gate: %d, Base 0x%8X, Segment 0x%2X, Flags %b\n",
+  printk(&state, "Setting idt gate: %2d, Base 0x%8X, Segment 0x%2X, Flags %b\n",
          num, base, sel, flags);
 
   idt[num].base_low =  (base & 0xFFFF);

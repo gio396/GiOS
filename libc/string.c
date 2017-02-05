@@ -113,3 +113,19 @@ atoi(const int8* str)
 
   return res;
 }
+
+b32
+strncmp(const int8 *str1, const int8 *str2, size_t num)
+{
+  int8 *a = (int8*)str1;
+  int8 *b = (int8*)str2;
+  size_t indx = 0;
+
+  while((*a == *b) && (indx++ < (num - 1)) )
+  {
+    a++;
+    b++;
+  }
+
+  return *a - *b;
+}
