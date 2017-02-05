@@ -7,6 +7,7 @@
 #include <arch/x86/io.h>
 #include <arch/x86/page.h>
 #include <arch/x86/cpuid.h>
+#include <arch/x86/apic.h>
 
 #include <keyboard.h>
 #include <mboot_header.h>
@@ -70,4 +71,11 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   printk(&state, "bss            [0x%8X, 0x%8X]\n", &l_sbss, &l_ebss);
   printk(&state, "end of kernel  0x%8X\n", &l_ekernel);
   printk(&state, "\n");
+
+  int8 buffer[17];
+  buffer[16] = '\0';
+  cpuid_string(CPUID_GET_VENDOR, buffer);
+  apic_enable();
+
+  printk(&state, "CPU vendor: %s\n", buffer + 4);
 }

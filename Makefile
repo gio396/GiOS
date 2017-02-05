@@ -38,11 +38,17 @@ os.iso: kernel.elf
 	# 						-o os.iso                       \
 	# 						iso
 
+QEMU_COMMON_FLAGS=-m 256  -cpu core2duo
+
 run: clean dir os.iso
-		qemu-system-x86_64  -boot d -kernel kernel.elf -m 256  -serial stdio
+		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -serial stdio
 
 qemu_dbg: clean dir os.iso
-		qemu-system-x86_64 -S -boot d -kernel kernel.elf -m 256  -monitor stdio -serial file:serial.log
+		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -monitor stdio
+
+qemu_dbg_s: clean dir os.iso
+		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -monitor stdio
+
 
 gdb:
 	$(GDB) --quiet kernel.sym -ex "target remote 127.0.0.1:1234"
@@ -54,7 +60,7 @@ $(SUBDIRSBUILD):
 	$(MAKE) -C $(basename $@) BUILD_ROOT="$(BUILD_ROOT)"
 
 %.o: %.c
-	$(CC) $(CFLAGS) (CINCLUDES)  $< -o $@
+	$(CC) $(CFLAGS) $(CINCLUDES)  $< -o $@
 
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@

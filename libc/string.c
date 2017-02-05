@@ -49,6 +49,37 @@ itoa(int32 value, int8* str, uint32 base)
   return rc;
 }
 
+int8* 
+uitoa(uint32 value, int8* str)
+{
+  char * rc;
+  char * ptr;
+  char * low;
+
+  rc = ptr = str;
+  low = ptr;
+
+  do
+  {
+    *ptr++ = "9876543210123456789"[9 + value % 10];
+    value /= 10;
+  } while ( value );
+  // Terminating the string.
+
+  *ptr-- = '\0';
+
+  // Invert the numbers.
+  while ( low < ptr )
+  {
+      char tmp = *low;
+      *low++ = *ptr;
+      *ptr-- = tmp;
+  }
+
+  return rc;
+}
+
+
 int8*
 to_upper(int8 *str)
 {

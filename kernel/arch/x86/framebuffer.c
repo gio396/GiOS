@@ -349,20 +349,10 @@ terminal_init(struct terminal_state *state)
 
   uint16 def_color = VGA_CHAR_COLOR('\0', state -> terminal_color);
 
-  for (int32 i = 0; i < VGA_HEIGHT; i++)
-  {
-    for (int32 j = 0; j < VGA_WIDTH; j++)
-    {
-      const int32 index = i * VGA_WIDTH + j;
-
-      terminal_set_char(state, index, def_color);
-    }
-  }
+  for (int32 i = 0; i < VGA_LENGTH; i++)
+      terminal_set_char(state, i, def_color);
 }
 
-//TODO(GIO): Make this handle unsigned and signed integers.
-//         : Make this handle different formating options available in printf.
-//         : Fix this mess.
 void
 printk(struct terminal_state *state, const int8 *format, ...)
 {
@@ -398,13 +388,28 @@ printk(struct terminal_state *state, const int8 *format, ...)
           if (run)
           {
             int32 len = strlen(buffer);
-            while(len++ < width)
+            while (len++ < width)
               terminal_put_char(state, '0');
 
           }
 
           terminal_put_string(state, buffer);
         , 'd', 'i');
+
+        CASE(
+          uint32 val = va_arg(args, int32);
+          char buffer[12];
+          uitoa(val, buffer);
+
+          if (run)
+          {
+            int32 len = strlen(buffer);
+            while (len++ < width)
+              terminal_put_char(state, '0');
+          }
+
+          terminal_put_string(state, buffer);
+        , 'u');
 
         CASE(
           int32 val = va_arg(args, int32);

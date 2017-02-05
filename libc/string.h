@@ -9,6 +9,9 @@ strlen(const int8* string);
 int8*
 itoa(int32 value, int8* str, uint32 base);
 
+int8*
+uitoa(uint32 value, int8* str);
+
 int32
 atoi(const int8* str);
 
