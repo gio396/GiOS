@@ -52,3 +52,5 @@ apic_enable(uint32 apic_base_address)
                  apic_read_reg(APIC_SPURIOUS_INTERRUPT_VECTOR_REGISTER) | 0x100
                 );
 }
+
+

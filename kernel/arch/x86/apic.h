@@ -62,4 +62,7 @@ apic_write_reg(uint32 reg, uint32 val);
 uint32
 apic_read_reg(uint32 reg);
 
+void
+parse_madt_table();
+
 #endif

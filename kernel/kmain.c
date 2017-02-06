@@ -8,7 +8,7 @@
 #include <arch/x86/page.h>
 #include <arch/x86/cpuid.h>
 #include <arch/x86/apic.h>
-#include <arch/x86/ACPI.h>
+#include <arch/x86/acpi.h>
 
 #include <keyboard.h>
 #include <mboot_header.h>
@@ -53,7 +53,7 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   page_init();  
   gdt_install();
   idt_install();
-  find_RSDP();
+  find_rsdp();
 
   if((edx & CPUID_FEAT_EDX_APIC))
   {
@@ -82,4 +82,8 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
+
+  void *apic_table = find_rstd_descriptor(RSDT_APIC);
+
+  printk(&state, "APIC table %08X\n", apic_table);
 }

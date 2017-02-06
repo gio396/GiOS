@@ -8,7 +8,7 @@ AS=nasm
 ASFLAGS=-f elf
 
 OBJS= \
-		framebuffer.o gdt.o idt.o io.o irq.o page.o int.o COM1.o cpuid.o msr.o apic.o ACPI.o
+		framebuffer.o gdt.o idt.o io.o irq.o page.o int.o COM1.o cpuid.o msr.o apic.o acpi.o
 
 all: $(OBJS)
 	cp *.o $(BUILD_ROOT)/OBJS
