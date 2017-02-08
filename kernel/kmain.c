@@ -26,6 +26,12 @@ extern const uint32 l_sbss;
 extern const uint32 l_ebss;
 extern const uint32 l_ekernel;
 
+void
+timer()
+{
+  printk(&state, "TIMER\n");
+}
+
 void 
 kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
 {

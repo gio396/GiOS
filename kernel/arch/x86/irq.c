@@ -3,6 +3,7 @@
 #include <arch/x86/idt.h>
 #include <arch/x86/io.h> // for outb
 #include <arch/x86/framebuffer.h>
+#include <arch/x86/apic.h>
 
 #define PIC1 0x20
 #define PIC2 0xA0
@@ -63,12 +64,17 @@ irq_common_handler(const union biosregs *reg)
     irq_handler(reg);
   }
 
+  //TODO(GIO): write to apic EOI register only when APIC is available and enabled.
+  //           otherwise set PIC EOI.
+  
   if (reg->int_no > 40)
   {
     outb(PIC2_CMD, EOI); //EOI slave
   }
 
   outb(PIC1_CMD, EOI); //EOI
+
+  apic_write_reg(APIC_EOI_REGISTER, EOI);
 
   return;
 }

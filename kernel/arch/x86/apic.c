@@ -84,23 +84,24 @@ apic_enable(uint32 apic_base_address)
   (void)(apic_base_address);
   uint32 apic_base_register_lo;
   uint32 apic_base_register_hi;
+  uint32 apic_id; 
 
   apic_base_register_lo = (apic_base_address & 0xFFFFF000) | IA32_APIC_BASE_MSR_ENABLE;
   apic_base_register_hi = 0;
 
   cpu_set_msr(IA32_APIC_BASE_MSR, apic_base_register_hi, apic_base_register_lo);
 
-  /* Set the Spourious Interrupt Vector Register bit 8 to start receiving interrupts */
 
-  uint32 spurious_int_vec = apic_read_reg(APIC_SPURIOUS_INTERRUPT_VECTOR_REGISTER);
-
-
-  printk(&state, "SIV %32b\n", spurious_int_vec);
-  printk(&state, "SIV %32b\n", spurious_int_vec | 0x100);
+  apic_write_reg(APIC_DESTINATION_FORMAT_REGISTER, 0xFFFFFFFF);
+  apic_write_reg(APIC_LOGICAL_DESTINATION_REGISTER, 0x10000000);
 
   apic_write_reg(APIC_SPURIOUS_INTERRUPT_VECTOR_REGISTER, 
                  apic_read_reg(APIC_SPURIOUS_INTERRUPT_VECTOR_REGISTER) | 0x100
                 );
+
+  apic_id = apic_read_reg(APIC_ID_REGISTER);
+
+  printk(&state, "APIC id: %08x\n", apic_id);
 
   parse_madt_table();
 
@@ -109,11 +110,12 @@ apic_enable(uint32 apic_base_address)
   printk(&state, "IOAPIC Version = 0x%08X\n", version);
 
 
-  ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 2, IOAPIC_SEG_INT_VEC(0x21) | IOAPIC_SEG_DEL_MOD(0X00) | IOAPIC_SEG_DES_MOD(0x00) | 
+  ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 2, IOAPIC_SEG_INT_VEC(0x21) | IOAPIC_SEG_DEL_MOD(0x00) | IOAPIC_SEG_DES_MOD(0x00) | 
                                                 IOAPIC_SEG_DEL_STA(0x00) | IOAPIC_SEG_INT_POL(0x00) | IOAPIC_SEG_IRR_RO (0x00) |
                                                 IOAPIC_SEG_TRI_MOD(0x00) | IOAPIC_SEG_INT_MAS(0x00));
 
   ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 3, IOAPIC_DEST_FIELD(0x00));
+
 }
 
 void
@@ -125,27 +127,23 @@ parse_madt_table()
 
   struct madt *madt = (struct madt*)(descriptor);
   void *madt_end = (int8*)madt + madt->header.length;
-  uint32 index = 0;
-
+  
   for (union madt_entry *cur = &madt->first_entry; (void*)cur  < madt_end;)
   {
-    printk(&state, "madt[%d].type = %02X\n", index, cur->ent0.header.entry_type);
-    printk(&state, "madt[%d].size = %02X\n", index++,   cur->ent0.header.entry_length);
-
     switch(cur->ent0.header.entry_type)
     {
       CASE(
         printk(&state, "Printing madt of type 0\n");
-        printk(&state, "ACPI processor Id    %02X\n", cur->ent0.apic_processor_id);
-        printk(&state, "ACPI id              %02X\n", cur->ent0.apic_id);
-        printk(&state, "flags                %08X\n\n", cur->ent0.flags);
+        printk(&state, "  ACPI processor Id    %02X\n", cur->ent0.apic_processor_id);
+        printk(&state, "  ACPI id              %02X\n", cur->ent0.apic_id);
+        printk(&state, "  flags                %08X\n", cur->ent0.flags);
         ,0);
 
       CASE(
         printk(&state, "Printing madt of type 1\n");
-        printk(&state, "IOAPIC id:           %02X\n", cur->ent1.ioapic_id);
-        printk(&state, "IOAPIC address       %04X\n", cur->ent1.ioapic_addr);
-        printk(&state, "Global SYS INT base  %08X\n\n", cur->ent1.global_system_interrupt_base);
+        printk(&state, "  IOAPIC id:           %02X\n", cur->ent1.ioapic_id);
+        printk(&state, "  IOAPIC address       %04X\n", cur->ent1.ioapic_addr);
+        printk(&state, "  Global SYS INT base  %08X\n", cur->ent1.global_system_interrupt_base);
 
         ioapic.ioapic_addr = cur->ent1.ioapic_addr;
         ioapic.ioapic_id = cur->ent1.ioapic_id;
@@ -153,23 +151,23 @@ parse_madt_table()
 
       CASE(
         printk(&state, "Printing madt of type 2\n");
-        printk(&state, "Bus source           %02X\n", cur->ent2.bus_source);
-        printk(&state, "irq source           %02X\n", cur->ent2.irq_source);
-        printk(&state, "Global SYS INT       %08X\n", cur->ent2.global_system_interrupt);
-        printk(&state, "flags                %04X\n\n", cur->ent2.flags);
+        printk(&state, "  Bus source           %02X\n", cur->ent2.bus_source);
+        printk(&state, "  irq source           %02X\n", cur->ent2.irq_source);
+        printk(&state, "  Global SYS INT       %08X\n", cur->ent2.global_system_interrupt);
+        printk(&state, "  flags                %04X\n", cur->ent2.flags);
         ,2);
 
       CASE(
         printk(&state, "Printing madt of type 3\n");
-        printk(&state, "Global SYS INT       %08X\n", cur->ent3.global_system_interrupt);
-        printk(&state, "flags                %04X\n\n", cur->ent3.flags);
+        printk(&state, "  Global SYS INT       %08X\n", cur->ent3.global_system_interrupt);
+        printk(&state, "  flags                %04X\n", cur->ent3.flags);
         ,3);
 
       CASE(
         printk(&state, "Printing madt of type 4\n");
-        printk(&state, "ACPI processor Id    %02X\n", cur->ent4.apic_processor_id);
-        printk(&state, "local apic inti#     %04X\n", cur->ent4.local_apic_inti);
-        printk(&state, "flags                %02X\n\n", cur->ent4.flags);
+        printk(&state, "  ACPI processor Id    %02X\n", cur->ent4.apic_processor_id);
+        printk(&state, "  local apic inti#     %04X\n", cur->ent4.local_apic_inti);
+        printk(&state, "  flags                %02X\n", cur->ent4.flags);
         ,4);
     }
 
