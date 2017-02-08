@@ -37,8 +37,10 @@ itoa(int32 value, int8* str, uint32 base)
     *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz"[35 + value % base];
     value /= base;
   } while ( value );
+
   // Terminating the string.
   *ptr-- = '\0';
+
   // Invert the numbers.
   while ( low < ptr )
   {
@@ -119,12 +121,12 @@ strncmp(const int8 *str1, const int8 *str2, size_t num)
 {
   int8 *a = (int8*)str1;
   int8 *b = (int8*)str2;
-  size_t indx = 0;
-
-  while((*a == *b) && (indx++ < (num - 1)) )
+  
+  while((*a == *b) && num > 1)
   {
     a++;
     b++;
+    num--;
   }
 
   return *a - *b;

@@ -4,7 +4,7 @@
 #include <common.h>
 
 //TODO add another RSDT entries;
-#define RSDT_APIC "APIC"
+#define RSDT_MADT "APIC"
 
 
 struct rsdp_descriptor
@@ -46,8 +46,8 @@ struct madt_entry0
 {
   struct madt_entry_header header;
 
-  uint8 acpi_processord_id;
-  uint8 acpi_id;
+  uint8 apic_processor_id;
+  uint8 apic_id;
   uint32 flags;
 } att_packed;
 
@@ -73,11 +73,32 @@ struct madt_entry2
   uint16 flags;
 } att_packed;
 
+//nonmaskable interrupt soruce
+struct madt_entry3
+{
+  struct madt_entry_header header;
+
+  uint16 flags;
+  uint32 global_system_interrupt;
+} att_packed;
+
+//local APIC MNI structrue.
+struct madt_entry4
+{
+  struct madt_entry_header header;
+
+  uint8 apic_processor_id;
+  uint16 flags;
+  uint8 local_apic_inti;
+} att_packed;
+
 union madt_entry
 {
   struct madt_entry0 ent0;
-  struct madt_entry0 ent1;
-  struct madt_entry0 ent2;
+  struct madt_entry1 ent1;
+  struct madt_entry2 ent2;
+  struct madt_entry3 ent3;
+  struct madt_entry4 ent4;
 };
 
 struct madt

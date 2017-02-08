@@ -13,7 +13,7 @@ cpuid_string(int32 code, int8 *buffer)
 {
   uint32 *intbuffer = (uint32*)buffer;
   __asm__ __volatile__("cpuid":
-                       "=a"(*intbuffer), "=b"(*(intbuffer + 1)), 
+                       "=a"(*(intbuffer + 0)), "=b"(*(intbuffer + 1)), 
                        "=c"(*(intbuffer + 3)), "=d"(*(intbuffer + 2)):
                        "a"(code):);
 }

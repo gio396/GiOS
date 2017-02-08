@@ -379,7 +379,6 @@ printk(struct terminal_state *state, const int8 *format, ...)
       switch (nxt)
       {
         //signed integer base 10
-        //d
         CASE(
           int32 val = va_arg(args, int32);
           char buffer[12];

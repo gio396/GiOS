@@ -38,7 +38,7 @@ os.iso: kernel.elf
 	# 						-o os.iso                       \
 	# 						iso
 
-QEMU_COMMON_FLAGS=-m 256  -cpu core2duo
+QEMU_COMMON_FLAGS=-m 256  -cpu core2duo -smp 1
 
 run: clean dir os.iso
 		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -serial stdio

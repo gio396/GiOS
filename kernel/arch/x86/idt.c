@@ -94,7 +94,6 @@ idt_set_gate(int32 num, uint32 base, uint16 sel, uint8 flags)
   idt[num].flags = flags;
 }
 
-
 void 
 idt_install()
 {

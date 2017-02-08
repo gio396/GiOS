@@ -33,8 +33,6 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   uint8 mask1, mask2;
   uint32 eax, ebx, edx, ecx;
 
-  cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
-
   // #ifdef QEMU_DBG
   init_serial();
   // #endif
@@ -55,6 +53,8 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   idt_install();
   find_rsdp();
 
+  cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
+
   if((edx & CPUID_FEAT_EDX_APIC))
   {
     apic_enable(APIC_LOCATION);
@@ -63,7 +63,7 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
     get_interrupt_masks(&mask1, &mask2);
 
     //Mask all the PIC interrupts
-    // set_interrupt_masks(0xFF, 0xFF);
+    set_interrupt_masks(0xFF, 0xFF);
   }  
 
   irq_install();  
@@ -82,8 +82,4 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
-
-  void *apic_table = find_rstd_descriptor(RSDT_APIC);
-
-  printk(&state, "APIC table %08X\n", apic_table);
 }

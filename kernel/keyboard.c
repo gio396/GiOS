@@ -4,6 +4,7 @@
 #include <arch/x86/io.h>
 #include <arch/x86/irq.h>
 #include <arch/x86/framebuffer.h>
+#include <arch/x86/apic.h>
 
 #include <macros.h>
 

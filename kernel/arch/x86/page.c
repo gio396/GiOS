@@ -109,9 +109,7 @@ page_init()
   }
 
   //enable apic page directory entry
-
   page_directory_entry[(APIC_VIRTUAL_BASE) >> 22] = (SEG_ADR(0xFEC00000) | SY4MB_PAGE | SEG_CHD(1));
-
 
   //4 mb map for higher half kernel.
   page_directory_entry[KERNEL_VIRTUAL_BASE >> 22] = SY4MB_PAGE;
@@ -136,7 +134,7 @@ page_init()
                                                                          SEG_DRT(0) | SEG_ACC(0) | SEG_CHD(1) | SEG_WRT(0) |
                                                                          SEG_USU(1) | SEG_RDW(1) | SEG_PRE(1);
 
-  free_range((void*)(mb(8)), (void*)(mb(9)));
+  free_range((void*)(mb(8)), (void*)(mb(128)));
 }
 
 struct free_page_list
