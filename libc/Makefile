@@ -9,7 +9,7 @@ ASFLAGS=-f elf
 
 SUBDIRS=
 OBJS= \
-	 memory.o string.o
+	 memory.o string.o list.o
 
 all: $(SUBDIRS) $(OBJS)
 	cp *.o $(BUILD_ROOT)/OBJS

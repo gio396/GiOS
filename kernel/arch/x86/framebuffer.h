@@ -2,6 +2,7 @@
 #define __FRAMEBUFFER_H__
 
 #include <common.h>
+#include <list.h>
 
 #define COLOR_BLACK          (int8)(0)
 #define COLOR_BLUE           (int8)(1)
@@ -41,11 +42,10 @@
 
 struct terminal_back_list
 {
-  struct terminal_back_list *prev;
-  struct terminal_back_list *next;
-
   uint16 left;
   uint16 buffer[VGA_LENGTH];
+
+  struct dlist_node node;
 };
 
 struct terminal_state 
@@ -57,8 +57,8 @@ struct terminal_state
   uint16* terminal_buffer;
 
   uint8   terminal_current_length; 
-  struct  terminal_back_list *cur;
-  struct  terminal_back_list *head;
+  struct dlist_root cur;
+  struct dlist_root head;
 };
 
 void 

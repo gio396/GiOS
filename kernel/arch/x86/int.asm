@@ -2,12 +2,10 @@
 ;Common handlers for interupts 0-31 reserved by intel x86 architecture
 ;
 
-
 %macro ISR_NEC 1
   global isr%1
   isr%1:
-    ; cli don't need this since all gates are set as interupt gates wich 
-    ; automatically disable interupts.
+    cli 
     push byte 0
     push %1
     jmp isr_common_stub
@@ -16,7 +14,7 @@
 %macro ISR_EC 1
   global isr%1
   isr%1:
-    ; cli
+    cli
     push %1
     jmp isr_common_stub
 %endmacro

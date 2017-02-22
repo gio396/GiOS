@@ -1,7 +1,7 @@
 CC=gcc
 GDB=gdb
 
-CFLAGS=-m32 -O3 -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding -ggdb
+CFLAGS=-m32 -O3 -nostdlib -nostdinc -fno-builtifn -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding -ggdb
 CINCLUDES=-I kernel/  -I libc/
 
 LDFLAGS=-T link.ld -melf_i386 
@@ -47,7 +47,7 @@ qemu_dbg: clean dir os.iso
 		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -monitor stdio
 
 qemu_dbg_s: clean dir os.iso
-		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -monitor stdio
+		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -monitor stdio -S
 
 
 gdb:

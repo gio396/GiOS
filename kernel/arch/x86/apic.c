@@ -34,6 +34,8 @@
 
 #define IOAPIC_DEST_FIELD(x)      ((x) << 0x17)
 
+#define LVT_TIMER_SEG_TIMER_MODE(x) ((x) << 0x10)
+
 global struct 
 {
   uint8 ioapic_id;
@@ -79,6 +81,14 @@ ioapic_read_reg(uint8 offset, uint32 * val)
 }
 
 void
+apic_init_timer()
+{
+  apic_write_reg(APIC_DIVIDE_CONFIGURATION_REGISTER, 0x00);
+  apic_write_reg(APIC_INITIAL_COUNT_REGISTER, 200);
+  apic_write_reg(APIC_LVT_TIMER_REGISTER, IOAPIC_SEG_INT_VEC(0x20) | LVT_TIMER_SEG_TIMER_MODE(0x01));
+}
+
+void
 apic_enable(uint32 apic_base_address)
 {
   (void)(apic_base_address);
@@ -109,13 +119,13 @@ apic_enable(uint32 apic_base_address)
   ioapic_read_reg(IOAPIC_REG_VERSION, &version);
   printk(&state, "IOAPIC Version = 0x%08X\n", version);
 
-
   ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 2, IOAPIC_SEG_INT_VEC(0x21) | IOAPIC_SEG_DEL_MOD(0x00) | IOAPIC_SEG_DES_MOD(0x00) | 
                                                 IOAPIC_SEG_DEL_STA(0x00) | IOAPIC_SEG_INT_POL(0x00) | IOAPIC_SEG_IRR_RO (0x00) |
                                                 IOAPIC_SEG_TRI_MOD(0x00) | IOAPIC_SEG_INT_MAS(0x00));
 
   ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 3, IOAPIC_DEST_FIELD(0x00));
 
+  apic_init_timer();
 }
 
 void
@@ -148,7 +158,7 @@ parse_madt_table()
         ioapic.ioapic_addr = cur->ent1.ioapic_addr;
         ioapic.ioapic_id = cur->ent1.ioapic_id;
         ,1);
-
+      
       CASE(
         printk(&state, "Printing madt of type 2\n");
         printk(&state, "  Bus source           %02X\n", cur->ent2.bus_source);

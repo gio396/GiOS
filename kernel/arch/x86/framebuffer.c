@@ -70,11 +70,22 @@ terminal_copy_buffer(struct terminal_state *state,
 internal void
 terminal_save_state(struct terminal_state *state)
 {
-  struct terminal_back_list *new_head = NULL;
-  struct terminal_back_list *head = (struct terminal_back_list*)state->head;
-  uint16 default_empty_char =  VGA_CHAR_COLOR(0, state->terminal_color);
+  struct dlist_node *new_head, *head;
+  struct dlist_root *head_root;
+  struct terminal_back_list *tbl_head, *tbl_new_head;
+  uint16 default_empty_char;
+  int32 buffer_offset, right_edge, left_edge, length;
 
-  if (head && head->left > 0)
+
+  new_head = NULL;
+  head_root = &state->head;
+  head = head_root->dlist_node;
+  tbl_head = CONTAINER_OF(head, struct terminal_back_list, node);
+  tbl_new_head = NULL;
+
+  default_empty_char = VGA_CHAR_COLOR(0, state->terminal_color);
+
+  if (head && tbl_head->left > 0)
   {
     new_head = head;
   }
@@ -82,69 +93,80 @@ terminal_save_state(struct terminal_state *state)
           ((state->terminal_flags & SEG_GET_LIMIT) == 
             state->terminal_current_length))
   {
-    new_head = DLIST_GET_TAIL(state->head, struct terminal_back_list);
+    new_head = dlist_get_tail(head);
+
     if(new_head->next)
       new_head->next->prev = NULL;
 
-    DLIST_INSERT_HEAD(head, new_head);
+    dlist_insert_head(head_root, new_head);
 
-    new_head->left = VGA_LENGTH;
-    state->head = new_head;
+    tbl_new_head = CONTAINER_OF(new_head, struct terminal_back_list, node);
+    tbl_new_head->left = VGA_LENGTH;
   }
   else
   {
-    new_head = (struct terminal_back_list*)kalloc();
+    tbl_new_head = (struct terminal_back_list*)kalloc(); 
+    new_head = &tbl_new_head->node;
 
-    DLIST_INSERT_HEAD(head, new_head);
-
-    state->head = new_head;
-    new_head->left = VGA_LENGTH;
+    dlist_insert_head(head_root, new_head);
+    tbl_new_head->left = VGA_LENGTH;
   }
 
   if(state->terminal_buffer == vga_buffer)
   { 
-    int32 buffer_offset = VGA_LENGTH - new_head->left;
-    int32 right_edge = state->terminal_row * (VGA_WIDTH) + state->terminal_column;
-    int32 left_edge = VGA_LENGTH - new_head->left;
-    int32 length = right_edge - left_edge;
+    tbl_new_head = CONTAINER_OF(new_head, struct terminal_back_list, node);
+    buffer_offset = VGA_LENGTH - tbl_new_head->left;
+    right_edge = state->terminal_row * (VGA_WIDTH) + state->terminal_column;
+    left_edge = VGA_LENGTH - tbl_new_head->left;
+    length = right_edge - left_edge;
 
     if(length > 0)
     {
       terminal_copy_buffer(state, 
                            buffer_offset, 
-                           new_head->buffer + buffer_offset,
+                           tbl_new_head->buffer + buffer_offset,
                            length);
 
-      new_head->left -= length;
+      tbl_new_head->left -= length;
     }
   }
   else
   {
-    state->terminal_buffer = new_head->buffer;
+    tbl_new_head = CONTAINER_OF(new_head, struct terminal_back_list, node);
+    state->terminal_buffer = tbl_new_head->buffer;
   }
 
   for(int32 i = 0; i < VGA_LENGTH; i++)
     terminal_set_char(state, i, default_empty_char);
 
-  state->head = (void*)new_head;
+  head_root->dlist_node = new_head;
 }
 
 void
 terminal_load_head()
 {
+  uint16 default_empty_char, used;
+  int32 idx;
+  struct dlist_root *cur_root;
+  struct dlist_node *head;
+  struct terminal_back_list *tbl_next;
+
+
   if (current_state->terminal_buffer != vga_buffer)
   {
-    uint16 default_empty_char = VGA_CHAR_COLOR(0, current_state->terminal_color); 
-    struct terminal_back_list *next = current_state->head;
-    uint16 used = VGA_LENGTH - next->left;
+    default_empty_char = VGA_CHAR_COLOR(0, current_state->terminal_color); 
+    cur_root = &current_state->cur;
+    head = current_state->head.dlist_node;
+    tbl_next = CONTAINER_OF(head, struct terminal_back_list, node);
+    used = VGA_LENGTH - tbl_next->left;
 
-    for (int32 i = 0; i < used; i++)
-      vga_set_char(i, next->buffer[i]);
+    for (idx = 0; idx < used; idx++)
+      vga_set_char(idx, tbl_next->buffer[idx]);
 
-    for (int32 i = used; i < VGA_LENGTH; i++)
-      vga_set_char(i, default_empty_char);
+    for (idx = used; idx < VGA_LENGTH; idx++)
+      vga_set_char(idx, default_empty_char);
 
-    current_state->cur = next;
+    cur_root->dlist_node = head;
     current_state->terminal_buffer = vga_buffer;
   }
 }
@@ -152,13 +174,20 @@ terminal_load_head()
 void
 terminal_load_prev()
 {
-  struct terminal_back_list *cur = current_state->cur;
-  struct terminal_back_list *head = current_state->head;
-  struct terminal_back_list *prev;
+  struct dlist_root *cur_root, *head_root;
+  struct dlist_node *cur, *head, *prev;
+  struct terminal_back_list *tbl_prev, *tbl_head;
+  uint16 used;
+  int32 idx;
+
+  cur_root = &current_state->cur;
+  cur = cur_root->dlist_node;
+  head_root = &current_state->head;
+  head = head_root->dlist_node;
 
   if (cur)
   {
-    prev = (void*)cur->prev; 
+    prev = cur->next;
   }
   else
   {
@@ -167,45 +196,57 @@ terminal_load_prev()
 
   if (prev)
   {
+    tbl_prev = CONTAINER_OF(prev, struct terminal_back_list, node);
+
     if ((prev == head) || 
         ((cur == head) && (current_state->terminal_buffer == vga_buffer)))
     {
+      tbl_head = CONTAINER_OF(head, struct terminal_back_list, node);
       terminal_save_state(current_state);
-      current_state->terminal_buffer = current_state->head->buffer;
+      current_state->terminal_buffer = tbl_head->buffer;
     }
 
-    uint16 used = VGA_LENGTH - prev->left;
+    used = VGA_LENGTH - tbl_prev->left;
 
-    for (int32 i = 0; i < used; i++)
-      vga_set_char(i, prev->buffer[i]);
+    for (idx = 0; idx < used; idx++)
+      vga_set_char(idx, tbl_prev->buffer[idx]);
 
-    current_state->cur = prev;
+    cur_root->dlist_node = prev;
   }
 }
 
 void
 terminal_load_next()
 {
-  struct terminal_back_list *cur = current_state->cur;
-  struct terminal_back_list *next = NULL;
-  uint16 default_empty_char = VGA_CHAR_COLOR(0, current_state->terminal_color); 
+  struct dlist_root *cur_root;
+  struct dlist_node *cur, *next;
+  struct terminal_back_list *tbl_next;
+  uint16 default_empty_char, used; 
+  int32 idx;
+
+
+  cur_root = &current_state->cur;
+  cur = cur_root->dlist_node;
+  next = NULL;
 
   if (cur)
-    next = cur->next;
+    next = cur->prev;
 
   if (next)
   {
-    uint16 used = VGA_LENGTH - next->left;
+    default_empty_char = VGA_CHAR_COLOR(0, current_state->terminal_color);
+    tbl_next = CONTAINER_OF(next, struct terminal_back_list, node); 
+    used = VGA_LENGTH - tbl_next->left;
 
-    for (int32 i = 0; i < used; i++)
-      vga_set_char(i, next->buffer[i]);
+    for (idx= 0; idx < used; idx++)
+      vga_set_char(idx, tbl_next->buffer[idx]);
 
-    for (int32 i = used; i < VGA_LENGTH; i++)
-      vga_set_char(i, default_empty_char);
+    for (idx = used; idx < VGA_LENGTH; idx++)
+      vga_set_char(idx, default_empty_char);
 
-    current_state->cur = next;
+    cur_root->dlist_node = next;
 
-    if(next == current_state->head)
+    if(next == current_state->head.dlist_node)
       current_state->terminal_buffer = vga_buffer;
   }
 }
@@ -213,13 +254,18 @@ terminal_load_next()
 internal uint32 
 terminal_advance_one(struct terminal_state *state)
 {
+  struct dlist_root head_root;
+  struct terminal_back_list *tbl_head;
   uint32 result;
+
 
   result = state->terminal_column + state->terminal_row * VGA_WIDTH;
 
   if (state->terminal_buffer != vga_buffer)
   {
-    state->head->left--;
+    head_root = state->head;
+    tbl_head = CONTAINER_OF(head_root.dlist_node, struct terminal_back_list, node); 
+    tbl_head->left--;
   }
 
   if (++state->terminal_column >= VGA_WIDTH)
@@ -242,17 +288,24 @@ terminal_advance_one(struct terminal_state *state)
 internal uint32
 terminal_delete_one(struct terminal_state *state)
 {
+  struct dlist_root head_root;
+  struct terminal_back_list *tbl_head;
   uint32 result;
-  uint16 data = VGA_CHAR_COLOR(0, state->terminal_color);
+  uint16 default_empty_char;
+
+
+  default_empty_char = VGA_CHAR_COLOR(0, state->terminal_color);
 
   if (state->terminal_buffer != vga_buffer)
   {
-    state->head->left++;
+    head_root = state->head;
+    tbl_head = CONTAINER_OF(head_root.dlist_node, struct terminal_back_list, node);
+    tbl_head->left++;
   }
 
   result = state->terminal_column + state->terminal_row * VGA_WIDTH - 1;
 
-  terminal_set_char(state, result, data);
+  terminal_set_char(state, result, default_empty_char);
 
   if (--state->terminal_column <= 0)
   {
@@ -264,16 +317,23 @@ terminal_delete_one(struct terminal_state *state)
     }
   }
 
-  return result;
+  return(result);
 }
 
 
 internal void 
 terminal_next_line(struct terminal_state *state)
 {
+  struct dlist_root head_root;
+  struct terminal_back_list *tbl_head;
+
+
   if (state->terminal_buffer != vga_buffer)
   {
-    state->head->left -= VGA_WIDTH - state->terminal_column;
+    head_root = state->head;
+    tbl_head = CONTAINER_OF(head_root.dlist_node, struct terminal_back_list, node);
+
+    tbl_head->left -= VGA_WIDTH - state->terminal_column;
   }
 
   state->terminal_column = 0;
@@ -291,6 +351,10 @@ terminal_next_line(struct terminal_state *state)
 void 
 terminal_put_char(struct terminal_state *st, int8 c)
 {
+  int32 idx;
+  int16 val;
+
+
   if(st == current_state && current_state->terminal_buffer != vga_buffer)
     terminal_load_head();
 
@@ -313,10 +377,10 @@ terminal_put_char(struct terminal_state *st, int8 c)
 
     default:
     {
-      int32 index = terminal_advance_one(st);
-      int16 val = VGA_CHAR_COLOR(c, st->terminal_color);
+      idx = terminal_advance_one(st);
+      val = VGA_CHAR_COLOR(c, st->terminal_color);
 
-      terminal_set_char(st, index, val);
+      terminal_set_char(st, idx, val);
     }
   }
 }
@@ -326,6 +390,7 @@ terminal_put_string(struct terminal_state *state, const int8 *s)
 {
   int8 *it = (int8*)s;
   int8 c;
+
 
   while (*it)
   {
@@ -338,24 +403,35 @@ terminal_put_string(struct terminal_state *state, const int8 *s)
 void 
 terminal_init(struct terminal_state *state)
 {
+  int32 idx;
+  uint16 default_empty_char;
+
+  default_empty_char = VGA_CHAR_COLOR(0, state -> terminal_color);
   state->terminal_row = 0;
   state->terminal_column = 0;
   state->terminal_buffer = (uint16 *)(VGA_MEM_LOCATION);
   state->terminal_color = VGA_COLOR(COLOR_BLACK, COLOR_GREEN);
 
+  state->head.dlist_node = NULL;
+  state->cur.dlist_node = NULL;
+
   current_state = state;
 
   vga_move_cursor(-1); // disable cursor we will handle it manually;;
 
-  uint16 def_color = VGA_CHAR_COLOR('\0', state -> terminal_color);
-
-  for (int32 i = 0; i < VGA_LENGTH; i++)
-      terminal_set_char(state, i, def_color);
+  for (idx = 0; idx < VGA_LENGTH; idx++)
+      terminal_set_char(state, idx, default_empty_char);
 }
 
 void
 printk(struct terminal_state *state, const int8 *format, ...)
 {
+  int8 nxt, chr, *str;
+  const int8 *run_start;
+  b32 run;
+  int32 width, val, len;
+
+
   va_list args;
   va_start(args, format);
 
@@ -363,10 +439,9 @@ printk(struct terminal_state *state, const int8 *format, ...)
   {
     if (*format == '%')
     {
-      int8 nxt = *++format;
-      const int8 *run_start = format;
-      b32 run = 0;
-      int32 width;
+      nxt = *++format;
+      run_start = format;
+      run = 0;
 
       while(nxt >= '0' && nxt <= '9')
       {
@@ -380,13 +455,14 @@ printk(struct terminal_state *state, const int8 *format, ...)
       {
         //signed integer base 10
         CASE(
-          int32 val = va_arg(args, int32);
-          char buffer[12];
+          val = va_arg(args, int32);
+          int8 buffer[12];
+
           itoa(val, buffer, 10);
 
           if (run)
           {
-            int32 len = strlen(buffer);
+            len = strlen(buffer);
             while (len++ < width)
               terminal_put_char(state, '0');
 
@@ -396,13 +472,13 @@ printk(struct terminal_state *state, const int8 *format, ...)
         , 'd', 'i');
 
         CASE(
-          uint32 val = va_arg(args, int32);
+          val = va_arg(args, int32);
           char buffer[12];
           uitoa(val, buffer);
 
           if (run)
           {
-            int32 len = strlen(buffer);
+            len = strlen(buffer);
             while (len++ < width)
               terminal_put_char(state, '0');
           }
@@ -411,13 +487,13 @@ printk(struct terminal_state *state, const int8 *format, ...)
         , 'u');
 
         CASE(
-          int32 val = va_arg(args, int32);
+          val = va_arg(args, int32);
           char buffer[12];
           itoa(val, buffer, 16);
 
           if (run)
           {
-            int32 len = strlen(buffer);
+            len = strlen(buffer);
             while(len++ < width)
               terminal_put_char(state, '0');
 
@@ -427,13 +503,13 @@ printk(struct terminal_state *state, const int8 *format, ...)
         , 'x');
 
         CASE(
-          int32 val = va_arg(args, int32);
+          val = va_arg(args, int32);
           char buffer[12];
           itoa(val, buffer, 16);
 
           if (run)
           {
-            int32 len = strlen(buffer);
+            len = strlen(buffer);
             while(len++ < width)
               terminal_put_char(state, '0');
 
@@ -444,13 +520,13 @@ printk(struct terminal_state *state, const int8 *format, ...)
         , 'X');
 
         CASE(
-          int32 val = va_arg(args, int32);
+          val = va_arg(args, int32);
           char buffer[33];
           itoa(val, buffer, 2);
 
           if (run)
           {
-            int32 len = strlen(buffer);
+            len = strlen(buffer);
             while(len++ < width)
               terminal_put_char(state, '0');
 
@@ -460,13 +536,13 @@ printk(struct terminal_state *state, const int8 *format, ...)
         , 'b');
 
         CASE(
-          int8 val = va_arg(args, int8);
-          terminal_put_char(state, val);
+          chr = va_arg(args, int8);
+          terminal_put_char(state, chr);
         , 'c');
 
         CASE(
-          int8 *val = (int8*)va_arg(args, int32);
-          terminal_put_string(state, val);
+          str = va_arg(args, int8*);
+          terminal_put_string(state, str);
         , 's');
 
         CASE(

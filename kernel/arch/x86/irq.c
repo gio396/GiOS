@@ -19,11 +19,11 @@
 #define ICW1_LEVEL      0x08 // Level triggered (edge) mode
 #define ICW1_INIT       0x10 // Initialization
 
-#define ICW4_8086       0x01    // 8086/88 (MCS-80/85) mode
-#define ICW4_AUTO       0x02    // Auto (normal) EOI
-#define ICW4_BUF_SLAVE  0x08    // Buffered mode/slave
-#define ICW4_BUF_MASTER 0x0C    // Buffered mode/master
-#define ICW4_SFNM       0x10    // Special fully nested (not)
+#define ICW4_8086       0x01 // 8086/88 (MCS-80/85) mode
+#define ICW4_AUTO       0x02 // Auto (normal) EOI
+#define ICW4_BUF_SLAVE  0x08 // Buffered mode/slave
+#define ICW4_BUF_MASTER 0x0C // Buffered mode/master
+#define ICW4_SFNM       0x10 // Special fully nested (not)
 
 #define EOI             0x20
 
@@ -111,11 +111,14 @@ irq_remap(uint32 offset1, uint32 offset2)
 void
 irq_install(void)
 {
+  printk(&state, "Remaping irqs to 32 and 40\n");
   //first 32 interupts are reserved for cpu
   irq_remap(32, 40);
 
+  printk(&state, "Setting irq idt entries\n");
   set_irq_gates();
 
+  printk(&state, "Enabling interupts\n");
   sti_enable();
 }
 

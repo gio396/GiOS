@@ -196,3 +196,15 @@ idt_common_handler(const union biosregs* ireg)
   //halt the system;
   halt();
 }
+
+void
+dissable_interrupts()
+{
+  __asm__ __volatile__ ("cli");
+}
+
+void
+enable_interrupts()
+{
+  
+}

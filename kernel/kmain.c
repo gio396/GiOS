@@ -9,7 +9,9 @@
 #include <arch/x86/cpuid.h>
 #include <arch/x86/apic.h>
 #include <arch/x86/acpi.h>
+#include <arch/x86/pit.h>
 
+#include <timer.h>
 #include <keyboard.h>
 #include <mboot_header.h>
 
@@ -26,10 +28,9 @@ extern const uint32 l_sbss;
 extern const uint32 l_ebss;
 extern const uint32 l_ekernel;
 
-void
-timer()
+void timer()
 {
-  printk(&state, "TIMER\n");
+  printk(&state, "t");
 }
 
 void 
@@ -58,8 +59,8 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   gdt_install();
   idt_install();
   find_rsdp();
-
   cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
+  irq_set_handler(0, timer);
 
   if((edx & CPUID_FEAT_EDX_APIC))
   {
@@ -72,7 +73,8 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
     set_interrupt_masks(0xFF, 0xFF);
   }  
 
-  irq_install();  
+  irq_install();
+  pit_init();
 
   keyboard_install(0);
 
@@ -88,4 +90,5 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
+  // timer_init();
 }

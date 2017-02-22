@@ -79,10 +79,10 @@ uint32 *first_page_table;
 void 
 free_range(void *begin, void *end)
 {
-  // assert1(begin);
-  // assert1(end);
-  // assert1(ALIGNED(begin, kb(4)));
-  // assert1(ALIGNED(begin, kb(4)));
+  assert1(begin);
+  assert1(end);
+  assert1(ALIGNED(begin, kb(4)));
+  assert1(ALIGNED(begin, kb(4)));
 
   uint8* p = (uint8*)(begin);
 
@@ -164,9 +164,9 @@ kalloc()
 void
 kfree(void* v)
 {
-  // (void)(v);
-  // assert1(v);
-  // assert1(ALIGNED((uint32)v, kb(4)));
+  (void)(v);
+  assert1(v);
+  assert1(ALIGNED((uint32)v, kb(4)));
 
   struct free_page_list *head;
 
