@@ -3,16 +3,17 @@
 
 #include <common.h>
 
-#define INTERUPT_MAX 0 //55.07 milliseconds
+#define INTERUPT_MAX             0 //55.07 milliseconds
+#define PIT_DEF_FREQUENCY        1193182
 
 void
-pit_init();
+pit_init(void);
 
 //in usecs
 void
 pit_interrupt_in(size_t time);
 
 uint16
-pit_get_current_count();
+pit_get_current_count(void);
 
 #endif

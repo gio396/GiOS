@@ -1,8 +1,6 @@
 #include "timer.h"
 
 #include <arch/x86/irq.h>
-#include <arch/x86/pit.h>
-#include <arch/x86/apic.h>
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/page.h>
 
@@ -20,6 +18,13 @@ struct
   uint8 *mem_start;
   struct slist_root head;
 } main_queue;
+
+struct
+{
+  uint32 irq_num;
+  void (*interrupt_in)(uint32 time);
+  uint32 (*timer_count)(void);
+} timer_info;
 
 void
 timer_handler(/*regs*/);
@@ -84,13 +89,17 @@ queue_free(struct timer_list_entry *entry)
 }
 
 void
-timer_init()
+timer_init(uint32 irq, void *interrupt_function, void *timer_count)
 {
   main_queue.head.slist_node = NULL;
   main_queue.mem_start = kalloc();
   memset(bit_map, 0x00, BITMAP_SIZE * sizeof(uint32));
 
-  irq_set_handler(0, timer_handler);
+  timer_info.irq_num = irq;
+  timer_info.interrupt_in = interrupt_function;
+  timer_info.timer_count = timer_count;
+
+  irq_set_handler(irq, timer_handler);
 }
 
 struct slist_node *
@@ -134,18 +143,18 @@ queue_add_timer(struct timer_list_entry entry)
 
   if (new_entry)
   {
+    memcpy(&entry, tle_queue_entry, sizeof(struct timer_list_entry));
+    
     head_root = &main_queue.head;
     head = head_root->slist_node; 
 
     if (head != NULL)
-    {
-      memcpy(&entry, tle_queue_entry, sizeof(struct timer_list_entry));
-      
+    {      
       prev = queue_find_loc(new_entry);
 
       if (prev == NULL)
       {
-        count = pit_get_current_count();
+        count = timer_info.timer_count();
 
         if (count < tle_queue_entry->timer)
         {
@@ -159,7 +168,7 @@ queue_add_timer(struct timer_list_entry entry)
           queue_sub_timer(passed);
 
           slist_insert_head(head_root, new_entry);
-          pit_interrupt_in(tle_queue_entry->timer);
+          timer_info.interrupt_in(tle_queue_entry->timer);
         }
       }
 
@@ -170,7 +179,7 @@ queue_add_timer(struct timer_list_entry entry)
       new_entry->next = NULL;
 
       head_root->slist_node = new_entry;
-      pit_interrupt_in(tle_queue_entry->timer);
+      timer_info.interrupt_in(tle_queue_entry->timer);
     }
   }
 }
@@ -192,6 +201,7 @@ timer_handler(/*regs*/)
   tle_cur = CONTAINER_OF(head, struct timer_list_entry, node);
 
   //handle this timer
+  printk(&state, "tick\n");
 
   passed = tle_cur->timer;
   queue_free(tle_cur);
@@ -216,6 +226,6 @@ timer_handler(/*regs*/)
     tle_cur = CONTAINER_OF(head, struct timer_list_entry, node);
 
     if (head)
-      pit_interrupt_in(tle_cur->timer);
+      timer_info.interrupt_in(tle_cur->timer);
   }
 }

@@ -3,6 +3,9 @@
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/msr.h>
 #include <arch/x86/acpi.h>
+#include <arch/x86/irq.h>
+#include <arch/x86/pit.h>
+#include <arch/x86/io.h>
 
 #include <macros.h>
 
@@ -24,17 +27,35 @@
 //[DESTFIELD|RES|INTMASK|TRMODE|IRRRO|INTPOL|DELSTAT|DESTMOD|DELMOD|INT_VEC]
 
 #define IOAPIC_SEG_INT_VEC(x)     (x)
-#define IOAPIC_SEG_DEL_MOD(x)     ((x) << 0x07)
-#define IOAPIC_SEG_DES_MOD(x)     ((x) << 0x0a)
-#define IOAPIC_SEG_DEL_STA(x)     ((x) << 0x0b)
-#define IOAPIC_SEG_INT_POL(x)     ((x) << 0x0c)
-#define IOAPIC_SEG_IRR_RO(x)      ((x) << 0x0d)
-#define IOAPIC_SEG_TRI_MOD(x)     ((x) << 0x0e)
-#define IOAPIC_SEG_INT_MAS(x)     ((x) << 0x0f)
+#define IOAPIC_SEG_DEL_MOD(x)     ((x) << 0x08)
+#define IOAPIC_SEG_DES_MOD(x)     ((x) << 0x0b)
+#define IOAPIC_SEG_DEL_STA(x)     ((x) << 0x0c)
+#define IOAPIC_SEG_INT_POL(x)     ((x) << 0x0d)
+#define IOAPIC_SEG_IRR_RO(x)      ((x) << 0x0e)
+#define IOAPIC_SEG_TRI_MOD(x)     ((x) << 0x0f)
+#define IOAPIC_SEG_INT_MAS(x)     ((x) << 0x10)
 
 #define IOAPIC_DEST_FIELD(x)      ((x) << 0x17)
 
-#define LVT_TIMER_SEG_TIMER_MODE(x) ((x) << 0x10)
+#define APIC_TIMER_ONESHOT  (0x0 << 17)
+#define APIC_TIMER_PERIODIC (0x1 << 17)
+#define APIC_TIMER_DEADLINE (0x2 << 17)
+
+#define APIC_DIVIDE1   0xB
+#define APIC_DIVIDE2   0x0
+#define APIC_DIVIDE4   0x1
+#define APIC_DIVIDE8   0x2
+#define APIC_DIVIDE16  0x3
+#define APIC_DIVIDE32  0x8
+#define APIC_DIVIDE64  0x9
+#define APIC_DIVIDE128 0xA
+
+#define INITIAL_TIMER_COUNT 200000000
+#define APIC_TIMER_DEST_VEC 48
+#define APIC_TARGET_FREQUENCY 1000000
+
+global int32 apic_freq = 0;
+global int32 apic_tick_count = 0;
 
 global struct 
 {
@@ -80,18 +101,79 @@ ioapic_read_reg(uint8 offset, uint32 * val)
   *val = ioapic_base_data[0];
 }
 
-void
-apic_init_timer()
+void  
+apic_init_timer(void)
 {
-  apic_write_reg(APIC_DIVIDE_CONFIGURATION_REGISTER, 0x00);
-  apic_write_reg(APIC_INITIAL_COUNT_REGISTER, 200);
-  apic_write_reg(APIC_LVT_TIMER_REGISTER, IOAPIC_SEG_INT_VEC(0x20) | LVT_TIMER_SEG_TIMER_MODE(0x01));
+  const int32 pit_end_count = 10000;
+  const int32 pit_initial_count = 60000;
+  const uint32 apic_initial_count = 100000000;
+  const uint32 masked_apic_16 = IOAPIC_SEG_INT_VEC(APIC_TIMER_DEST_VEC) | IOAPIC_SEG_INT_MAS(1) | APIC_TIMER_PERIODIC;
+  const uint32 unmasked_oneshot = IOAPIC_SEG_INT_VEC(APIC_TIMER_DEST_VEC) | IOAPIC_SEG_INT_MAS(0) | APIC_TIMER_ONESHOT;
+
+  uint32 apic_test_count;
+
+  apic_write_reg(APIC_DIVIDE_CONFIGURATION_REGISTER, APIC_DIVIDE1);;
+  apic_write_reg(APIC_INITIAL_COUNT_REGISTER, apic_initial_count);
+
+  apic_write_reg(APIC_LVT_TIMER_REGISTER, masked_apic_16);
+
+  pit_interrupt_in(pit_initial_count);
+
+  apic_write_reg(APIC_LVT_TIMER_REGISTER, masked_apic_16 ^ IOAPIC_SEG_INT_MAS(1));
+
+  volatile int32 cnt = 0;
+  do
+  {
+
+    //nop to let pit count
+    //when running in virtual machine;
+
+    for (int i = 0; i < 100; i++)
+    {
+      __asm__ __volatile__ ("NOP");
+    }
+
+    cnt = pit_get_current_count();
+  } while(cnt >= pit_end_count);
+
+  //mask apic.
+  apic_write_reg(APIC_LVT_TIMER_REGISTER, masked_apic_16);
+
+  //get apic titmer count.
+  apic_test_count = apic_read_reg(APIC_CURRENT_COUNT_REGISTER);
+
+  printk(&state, "count %d\n", (apic_initial_count - apic_test_count));
+
+  apic_freq = ( (PIT_DEF_FREQUENCY / (pit_initial_count - cnt) ) * (apic_initial_count - apic_test_count));
+  printk(&state, "APIC freq ~ %d\n", apic_freq);
+
+  // ticks per 1us
+  apic_tick_count = apic_freq / APIC_TARGET_FREQUENCY;
+
+  printk(&state, "Target Frequency %d\n", apic_tick_count);
+
+  apic_write_reg(APIC_LVT_TIMER_REGISTER, unmasked_oneshot);
+  printk(&state, "Apic Timer initialization done!\n");
 }
+
+void
+apic_timer_interrupt_in(uint32 us)
+{
+  uint32 count = (us * apic_tick_count);
+
+  apic_write_reg(APIC_INITIAL_COUNT_REGISTER, count);
+}
+
+uint32
+apic_timer_get_count(void)
+{
+  return apic_read_reg(APIC_CURRENT_COUNT_REGISTER); 
+}
+
 
 void
 apic_enable(uint32 apic_base_address)
 {
-  (void)(apic_base_address);
   uint32 apic_base_register_lo;
   uint32 apic_base_register_hi;
   uint32 apic_id; 
@@ -119,17 +201,16 @@ apic_enable(uint32 apic_base_address)
   ioapic_read_reg(IOAPIC_REG_VERSION, &version);
   printk(&state, "IOAPIC Version = 0x%08X\n", version);
 
+  //setting up keyboard interrupt vector
   ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 2, IOAPIC_SEG_INT_VEC(0x21) | IOAPIC_SEG_DEL_MOD(0x00) | IOAPIC_SEG_DES_MOD(0x00) | 
                                                 IOAPIC_SEG_DEL_STA(0x00) | IOAPIC_SEG_INT_POL(0x00) | IOAPIC_SEG_IRR_RO (0x00) |
                                                 IOAPIC_SEG_TRI_MOD(0x00) | IOAPIC_SEG_INT_MAS(0x00));
 
   ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 3, IOAPIC_DEST_FIELD(0x00));
-
-  apic_init_timer();
 }
 
 void
-parse_madt_table()
+parse_madt_table(void)
 {
   void* descriptor = find_rstd_descriptor(RSDT_MADT);
 
@@ -185,3 +266,4 @@ parse_madt_table()
     cur = (union madt_entry*)((int8*)cur + cur->ent0.header.entry_length);
   }
 }
+

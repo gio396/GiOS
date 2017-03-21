@@ -79,6 +79,7 @@ IRQ 12, 44 ;ps/2 mouse
 IRQ 13, 45 ;FPU
 IRQ 14, 46 ;primari IDE channel
 IRQ 15, 47 ;secondary IDE channel
+IRQ Time, 48 ;timer
 
 extern idt_common_handler
 isr_common_stub

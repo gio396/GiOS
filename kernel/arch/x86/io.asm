@@ -62,3 +62,8 @@ enable_paging:
   mov cr3, eax;
   mov eax, cr0
   ret
+
+;nop asm command
+global nop
+nop:
+  NOP

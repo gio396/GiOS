@@ -35,6 +35,7 @@ sti_enable() { __asm__ __volatile__ ("sti"); }
 global void *irq_handlers[] = 
 {
   0, 0, 0, 0, 0, 0, 0, 0, 
+  0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0
 };
 
@@ -135,3 +136,16 @@ set_interrupt_masks(uint8 mask1, uint8 mask2)
   outb(PIC1_DAT, mask1);
   outb(PIC2_DAT, mask2);
 }
+
+void
+disable_interrupts()
+{
+  __asm__ __volatile__ ("cli");
+}
+
+void
+enable_interrupts()
+{
+  __asm__ __volatile__ ("sti");
+}
+

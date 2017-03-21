@@ -63,6 +63,15 @@ uint32
 apic_read_reg(uint32 reg);
 
 void
-parse_madt_table();
+parse_madt_table(void);
+
+void
+apic_init_timer(void);
+
+void
+apic_timer_interrupt_in(uint32 us);
+
+uint32
+apic_timer_get_count(void);
 
 #endif

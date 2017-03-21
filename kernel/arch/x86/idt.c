@@ -64,6 +64,8 @@ def_irq(15);
 
 #undef def_irq
 
+extern void irqTime(void);
+
 #define SEG_PRES(x) ((x) << 0x07) // 1 present 0 not present
 #define SEG_PRIV(x) ((x) << 0x06) // privilage ring (0 - 3)
 #define SEG_SGAT(x) ((x) << 0x04) // storage gate
@@ -163,6 +165,7 @@ set_irq_gates()
   idt_set_gate(45, (uint32)irq13, 0x08, IDT_INTR_PL0);
   idt_set_gate(46, (uint32)irq14, 0x08, IDT_INTR_PL0);
   idt_set_gate(47, (uint32)irq15, 0x08, IDT_INTR_PL0);
+  idt_set_gate(48, (uint32)irqTime, 0x08, IDT_INTR_PL0);
 }
 
 const char* idt_error_desc[] =
@@ -195,16 +198,4 @@ idt_common_handler(const union biosregs* ireg)
 
   //halt the system;
   halt();
-}
-
-void
-dissable_interrupts()
-{
-  __asm__ __volatile__ ("cli");
-}
-
-void
-enable_interrupts()
-{
-  
 }

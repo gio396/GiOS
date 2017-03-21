@@ -32,10 +32,4 @@ idt_install();
 void
 set_irq_gates();
 
-void
-dissable_interrupts();
-
-void
-enable_interrupts();
-
 #endif

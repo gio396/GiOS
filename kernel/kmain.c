@@ -28,10 +28,6 @@ extern const uint32 l_sbss;
 extern const uint32 l_ebss;
 extern const uint32 l_ekernel;
 
-void timer()
-{
-  printk(&state, "t");
-}
 
 void 
 kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
@@ -60,7 +56,9 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   idt_install();
   find_rsdp();
   cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
-  irq_set_handler(0, timer);
+
+  irq_install();
+  pit_init();
 
   if((edx & CPUID_FEAT_EDX_APIC))
   {
@@ -70,13 +68,17 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
     get_interrupt_masks(&mask1, &mask2);
 
     //Mask all the PIC interrupts
-    set_interrupt_masks(0xFF, 0xFF);
-  }  
+    set_interrupt_masks(0xFE, 0xFE);
 
-  irq_install();
-  pit_init();
+    timer_init(16, apic_timer_interrupt_in, apic_timer_get_count);
+  }
+  else
+  {
+    timer_init(0, pit_interrupt_in, pit_get_current_count);
+  }
 
   keyboard_install(0);
+  apic_init_timer();
 
   printk(&state, "\n");
   printk(&state, "read only data [0x%8X, 0x%8X]\n", &l_srodata, &l_erodata);
@@ -90,5 +92,15 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
-  // timer_init();
+
+
+  struct timer_list_entry entry;
+
+  for (int i = 0; i < 10; i++)
+  {
+    entry.timer = (i + 1) * 1000000;
+    entry.op_code = 0;
+
+    queue_add_timer(entry);
+  }
 }

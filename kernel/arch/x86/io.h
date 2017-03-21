@@ -18,6 +18,9 @@ inb(uint16 port);
 int32 
 halt();
 
+void
+nop(void);
+
 int32 
 idt_load(uint32 idt_ptr);
 
