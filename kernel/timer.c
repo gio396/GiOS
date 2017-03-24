@@ -12,7 +12,6 @@
 #define MAX_TIMERS  4096 / sizeof(struct timer_list_entry)
 #define BITMAP_SIZE MAX_TIMERS >> 2
 
-global uint32 a = 0;
 global uint32 bit_map[BITMAP_SIZE];
 
 struct
@@ -207,7 +206,7 @@ timer_handler(/*regs*/)
   tle = CONTAINER_OF(head, struct timer_list_entry, node);
 
   //handle this timer
-  printk(&state, "asd\n");
+  tle -> function_callback(tle -> callback_arg);
 
   queue_free(tle);
   queue_sub_timer(tle -> timer);
@@ -221,8 +220,8 @@ timer_handler(/*regs*/)
     if (tle -> timer == 0)
     {
       //handle this timers too.
-      printk(&state, "asd\n");
-
+      tle -> function_callback(tle -> callback_arg);
+      
       head = head -> next;
       queue_free(tle);
 
@@ -237,12 +236,15 @@ timer_handler(/*regs*/)
 }
 
 void
-new_timer(uint32 time)
+new_timer(uint32 time, timer_function_proc function, uint32 callback_arg)
 {
   struct timer_list_entry *new_tle;
 
   new_tle = allocate_new_entry();
+
   new_tle -> timer = time;
+  new_tle -> function_callback = function;
+  new_tle -> callback_arg = callback_arg;
 
   queue_add_timer(new_tle);
 }

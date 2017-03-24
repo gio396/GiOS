@@ -152,6 +152,8 @@ apic_init_timer(void)
 
   printk(&state, "Target Frequency %d\n", apic_tick_count);
 
+  apic_write_reg(APIC_INITIAL_COUNT_REGISTER, 0);
+
   apic_write_reg(APIC_LVT_TIMER_REGISTER, unmasked_oneshot);
   printk(&state, "Apic Timer initialization done!\n");
 }

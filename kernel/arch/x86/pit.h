@@ -7,9 +7,11 @@
 #define PIT_DEF_FREQUENCY        1193182
 
 void
-pit_init(void);
+pit_init();
 
-//in usecs
+void
+pit_system_timer_init();
+
 void
 pit_interrupt_in(size_t time);
 

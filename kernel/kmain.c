@@ -12,6 +12,7 @@
 #include <arch/x86/pit.h>
 
 #include <timer.h>
+#include <time.h>
 #include <keyboard.h>
 #include <mboot_header.h>
 
@@ -29,10 +30,22 @@ extern const uint32 l_ebss;
 extern const uint32 l_ekernel;
 
 void
-tick()
+timer_callback(uint32 val)
 {
-  printk(&state, "tick\n");
-  apic_timer_interrupt_in(10000000);
+  printk(&state, "tick %d\n", val);
+}
+
+void
+everySecond()
+{
+  static uint32 count = 0;
+  count++;
+
+  printk(&state, "asd");
+  if ((count % 100000) == 0)
+  {
+    printk(&state, "tick\n");
+  }
 }
 
 void 
@@ -63,8 +76,9 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   find_rsdp();
   cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
 
-  irq_install();
   pit_init();
+
+  irq_install();
 
   if((edx & CPUID_FEAT_EDX_APIC))
   {
@@ -75,8 +89,12 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
 
     //Mask all the PIC interrupts
     set_interrupt_masks(0xFE, 0xFE);
+    apic_init_timer();
 
     timer_init(16, apic_timer_interrupt_in, apic_timer_get_tick_count);
+
+    printk(&state, "Changing pit to system timer (100us) tics\n");
+    init_pit_system_timer();
   }
   else
   {
@@ -84,7 +102,6 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   }
 
   keyboard_install(0);
-  apic_init_timer();
 
   printk(&state, "\n");
   printk(&state, "read only data [0x%8X, 0x%8X]\n", &l_srodata, &l_erodata);
@@ -98,11 +115,4 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
-
-
-
-  for (int i = 0; i < 30; i++)
-  {
-    new_timer((i + 1) * 1000000);
-  }
 }

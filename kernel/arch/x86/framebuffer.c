@@ -2,6 +2,7 @@
 
 #include <arch/x86/io.h>
 #include <arch/x86/page.h>
+#include <arch/x86/irq.h>
 
 #include <string.h>
 #include <memory.h>

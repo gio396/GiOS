@@ -49,12 +49,35 @@
 
 
 void
+pit_system_timer_handler(/*regs*/)
+{
+  static int cnt = 0;
+
+  if ((cnt++ % 1000) == 0 )
+  {
+    printk(&state, "second\n");
+  } 
+}
+
+void
 pit_init(void)
 {
   uint8 mode = PIT_SEG_CHN(0) | OP_MODE_1 | PIT_SEG_ACC(0x3) | PIT_SEG_BCD(0);
   outb(PIT_MODE_COM, mode);
   outb(PIT_CHANNEL_0, 0);
   outb(PIT_CHANNEL_0, 0);
+}
+
+void
+pit_system_timer_init()
+{
+  uint8 mode = PIT_SEG_CHN(0) | OP_MODE_3 | PIT_SEG_ACC(0x3) | PIT_SEG_BCD(0);
+  outb(PIT_MODE_COM, mode);
+  outb(PIT_CHANNEL_0, 0);
+  outb(PIT_CHANNEL_0, 0);
+  pit_interrupt_in(1193);
+
+  irq_set_handler(0, pit_system_timer_handler);
 }
 
 void

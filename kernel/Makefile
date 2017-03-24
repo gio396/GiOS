@@ -12,7 +12,7 @@ SUBDIRSCLEAN=$(addsuffix .clean, $(SUBDIRS))
 SUBDIRSBUILD=$(addsuffix .build, $(SUBDIRS))
 
 OBJS= \
-	 timer.o keyboard.o kmain.o __start.o
+	 time.o timer.o keyboard.o kmain.o __start.o
 
 all: $(SUBDIRSBUILD) $(OBJS)
 	cp *.o $(BUILD_ROOT)/OBJS
