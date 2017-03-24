@@ -72,6 +72,6 @@ void
 apic_timer_interrupt_in(uint32 us);
 
 uint32
-apic_timer_get_count(void);
+apic_timer_get_tick_count(void);
 
 #endif

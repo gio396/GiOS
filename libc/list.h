@@ -11,7 +11,7 @@
     (type *)( (int8 *)__mptr - OFFSET_OF(type,mbr) );})
 
 #define FOR_EACH_LIST(it, head)\
-    for(it = head; it->next; it = it->next)
+    for(it = head; it != NULL; it = it->next)
 
 struct slist_node
 {

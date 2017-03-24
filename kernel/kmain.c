@@ -28,6 +28,12 @@ extern const uint32 l_sbss;
 extern const uint32 l_ebss;
 extern const uint32 l_ekernel;
 
+void
+tick()
+{
+  printk(&state, "tick\n");
+  apic_timer_interrupt_in(10000000);
+}
 
 void 
 kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
@@ -70,7 +76,7 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
     //Mask all the PIC interrupts
     set_interrupt_masks(0xFE, 0xFE);
 
-    timer_init(16, apic_timer_interrupt_in, apic_timer_get_count);
+    timer_init(16, apic_timer_interrupt_in, apic_timer_get_tick_count);
   }
   else
   {
@@ -94,13 +100,9 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   printk(&state, "CPU vendor: %s\n", buffer + 4);
 
 
-  struct timer_list_entry entry;
 
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 30; i++)
   {
-    entry.timer = (i + 1) * 1000000;
-    entry.op_code = 0;
-
-    queue_add_timer(entry);
+    new_timer((i + 1) * 1000000);
   }
 }

@@ -112,7 +112,7 @@ apic_init_timer(void)
 
   uint32 apic_test_count;
 
-  apic_write_reg(APIC_DIVIDE_CONFIGURATION_REGISTER, APIC_DIVIDE1);;
+  apic_write_reg(APIC_DIVIDE_CONFIGURATION_REGISTER, APIC_DIVIDE16);;
   apic_write_reg(APIC_INITIAL_COUNT_REGISTER, apic_initial_count);
 
   apic_write_reg(APIC_LVT_TIMER_REGISTER, masked_apic_16);
@@ -159,15 +159,25 @@ apic_init_timer(void)
 void
 apic_timer_interrupt_in(uint32 us)
 {
+  disable_interrupts();
+
   uint32 count = (us * apic_tick_count);
 
   apic_write_reg(APIC_INITIAL_COUNT_REGISTER, count);
+
+  enable_interrupts();
 }
 
 uint32
 apic_timer_get_count(void)
 {
   return apic_read_reg(APIC_CURRENT_COUNT_REGISTER); 
+}
+
+uint32
+apic_timer_get_tick_count(void)
+{
+  return (apic_timer_get_count() / apic_tick_count);
 }
 
 

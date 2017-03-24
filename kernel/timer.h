@@ -22,6 +22,6 @@ void
 timer_init();
 
 void
-queue_add_timer(struct timer_list_entry new_entry);
+new_timer(uint32 time);
 
 #endif

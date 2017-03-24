@@ -1,5 +1,7 @@
 #include "timer.h"
 
+//revrite this mess.
+
 #include <arch/x86/irq.h>
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/page.h>
@@ -30,6 +32,24 @@ void
 timer_handler(/*regs*/);
   
 void
+timer_print_list(void)
+{
+  struct slist_node *head;
+  struct slist_node *it;
+  struct timer_list_entry *tle;
+
+  head = main_queue.head.slist_node;
+
+  FOR_EACH_LIST(it, head)
+  {
+    tle = CONTAINER_OF(it, struct timer_list_entry, node);
+    printk(&state, "timer: %08X -> ", tle -> timer);
+  }
+
+  printk(&state, "NULL\n");
+}
+
+void
 queue_sub_timer(uint32 passed)
 {
   struct slist_node *it, *head;
@@ -50,6 +70,24 @@ queue_sub_timer(uint32 passed)
     {
       tle -> timer -= passed;
     }
+  }
+}
+
+void
+queue_sub_head_time(void)
+{
+  struct slist_node *head;
+  struct timer_list_entry *tle;
+  uint32 passed_time;
+
+  head = main_queue.head.slist_node;
+
+  if (head != NULL)
+  {
+    tle = CONTAINER_OF(head, struct timer_list_entry, node);
+
+    passed_time = tle -> timer - timer_info.timer_count();
+    queue_sub_timer(passed_time); 
   }
 }
 
@@ -111,6 +149,7 @@ queue_find_loc(struct slist_node *entry)
 
   head_root = main_queue.head;
   head = head_root.slist_node;
+  prev = NULL;
 
   in_tle = CONTAINER_OF(entry, struct timer_list_entry, node); 
 
@@ -126,62 +165,34 @@ queue_find_loc(struct slist_node *entry)
     prev = it;
   }
 
-  return it;
+  return prev;
 }
 
 void
-queue_add_timer(struct timer_list_entry entry)
+queue_add_timer(struct timer_list_entry *new_entry)
 {
-  struct slist_root *head_root;
-  struct slist_node *prev, *new_entry, *head;
-  struct timer_list_entry *tle_queue_entry, *tle_head;
-  uint16 count;
-  uint32 passed;
+  struct slist_node *entry_position;
 
-  tle_queue_entry = allocate_new_entry();
-  new_entry = &tle_queue_entry->node;
-
-  if (new_entry)
+  if (new_entry !=  NULL)
   {
-    memcpy(&entry, tle_queue_entry, sizeof(struct timer_list_entry));
-    
-    head_root = &main_queue.head;
-    head = head_root->slist_node; 
+    queue_sub_head_time();
 
-    if (head != NULL)
-    {      
-      prev = queue_find_loc(new_entry);
+    entry_position = queue_find_loc(&new_entry -> node);
 
-      if (prev == NULL)
-      {
-        count = timer_info.timer_count();
+    if (entry_position == NULL)
+    {
+      printk(&state, "NEW_HEAD\n");
+      slist_insert_head(&main_queue.head, &new_entry -> node);
 
-        if (count < tle_queue_entry->timer)
-        {
-          prev = head;
-        }
-        else
-        {
-          tle_head = CONTAINER_OF(head, struct timer_list_entry, node);
-
-          passed = tle_head->timer - count;
-          queue_sub_timer(passed);
-
-          slist_insert_head(head_root, new_entry);
-          timer_info.interrupt_in(tle_queue_entry->timer);
-        }
-      }
-
-      slist_insert_after(prev, new_entry);
+      timer_info.interrupt_in(new_entry -> timer);
     }
     else
-    { 
-      new_entry->next = NULL;
-
-      head_root->slist_node = new_entry;
-      timer_info.interrupt_in(tle_queue_entry->timer);
+    {
+      slist_insert_after(entry_position, &new_entry -> node);
     }
   }
+
+  timer_print_list();
 }
 
 void
@@ -189,43 +200,50 @@ timer_handler(/*regs*/)
 {
   struct slist_root *head_root;
   struct slist_node *head;
-  struct timer_list_entry* tle_cur;
-  uint32 passed;
+  struct timer_list_entry *tle;
 
   head_root = &main_queue.head;
-  head = head_root->slist_node;
-
-  if(head == NULL)
-    return;
-
-  tle_cur = CONTAINER_OF(head, struct timer_list_entry, node);
+  head = head_root -> slist_node;
+  tle = CONTAINER_OF(head, struct timer_list_entry, node);
 
   //handle this timer
-  printk(&state, "tick\n");
+  printk(&state, "asd\n");
 
-  passed = tle_cur->timer;
-  queue_free(tle_cur);
+  queue_free(tle);
+  queue_sub_timer(tle -> timer);
 
-  head_root->slist_node = head->next;
-  head = head_root->slist_node;
+  head = head -> next;
 
-  if(head != NULL)
+  while (head)
   {
-    queue_sub_timer(passed);
+    tle = CONTAINER_OF(head, struct timer_list_entry, node);
 
-    while(head && tle_cur->timer == 0)
+    if (tle -> timer == 0)
     {
-      tle_cur = CONTAINER_OF(head, struct timer_list_entry, node);
+      //handle this timers too.
+      printk(&state, "asd\n");
 
-      head_root->slist_node = head->next;
-      queue_free(tle_cur);
+      head = head -> next;
+      queue_free(tle);
 
-      head = head_root->slist_node;
+      continue;
     }
 
-    tle_cur = CONTAINER_OF(head, struct timer_list_entry, node);
-
-    if (head)
-      timer_info.interrupt_in(tle_cur->timer);
+    timer_info.interrupt_in(tle -> timer);
+    break;
   }
+
+  main_queue.head.slist_node = head;
 }
+
+void
+new_timer(uint32 time)
+{
+  struct timer_list_entry *new_tle;
+
+  new_tle = allocate_new_entry();
+  new_tle -> timer = time;
+
+  queue_add_timer(new_tle);
+}
+
