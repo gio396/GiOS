@@ -20,7 +20,7 @@ struct gdt_entry
   uint8 base_high;
 } att_packed;
 
-struct gdt_entry gdt[5];
+struct gdt_entry gdt[6];
 struct gdt_ptr gp;
 
 void 

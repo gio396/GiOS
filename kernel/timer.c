@@ -180,7 +180,6 @@ queue_add_timer(struct timer_list_entry *new_entry)
 
     if (entry_position == NULL)
     {
-      printk(&state, "NEW_HEAD\n");
       slist_insert_head(&main_queue.head, &new_entry -> node);
 
       timer_info.interrupt_in(new_entry -> timer);

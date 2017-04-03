@@ -4,11 +4,6 @@
 #include <common.h>
 #include <list.h>
 
-#define TIMER_MAX 0 
-//apic 4.29 seconds
-
-#define OP_CODE_PRINT 0x00
-
 typedef void(*timer_function_proc)(uint32);
 
 //timer queue in nanoseconds
