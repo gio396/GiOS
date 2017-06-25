@@ -1,5 +1,10 @@
 #include  <common.h>
 
+//syscall abi
+// syscall number $eax
+// syscal args $ebx $ecx $edx $esi $edi $ebp
+//
+
 struct tss_entry
 {
    uint32 prev_tss;   // The previous TSS - if we used hardware task switching this would form a linked list.
@@ -30,4 +35,14 @@ struct tss_entry
    uint16 trap;
    uint16 iomap_base;
 } att_packed;
+
+//here temporarly
+// int32
+// syscall(int32 number, ...)
+// {
+//   va_list args;
+//   va_start(args, number);
+
+  
+// }
 

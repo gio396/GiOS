@@ -83,7 +83,7 @@ IRQ Time, 48 ;timer
 
 extern idt_common_handler
 isr_common_stub
-  pusha
+  pushad
   push ds
   push es
   push fs
@@ -105,14 +105,14 @@ isr_common_stub
   pop fs
   pop es
   pop ds
-  popa
+  popad
   add esp, 8 ;clear int_no err_no
   iret
 
 
 extern irq_common_handler
 irq_common_stub:
-  pusha
+  pushad
   push ds
   push es
   push fs
@@ -134,7 +134,7 @@ irq_common_stub:
   pop fs
   pop es
   pop ds
-  popa
+  popad
   add esp, 8 ;clear int_no err_no
   iret
 

@@ -23,4 +23,11 @@ union biosregs
   };
 };
 
+//no flags or gs, fs, es, ds
+#define REG_PUSH(r)\
+  __asm__ __volatile__ ("":: "a"((r).eax), "b"((r).ebx), "c"((r).ecx), "d"((r).edx), "S"((r).esi), "D"((r).edi))\
+
+#define REG_POP(r)\
+  __asm__ __volatile__ ("": "=a"((r).eax), "=b"((r).ebx), "=c"((r).ecx), "=d"((r).edx), "=S"((r).esi), "=D"((r).edi))\
+
 #endif

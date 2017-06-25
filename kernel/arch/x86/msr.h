@@ -11,6 +11,11 @@
 #define IA32_SYSENTER_EIP_MSR  0x176
 #define IA32_APIC_BASE_MSR      0x1B
 
+#define IA32_STAR_MSR         0xC0000081
+#define IA32_LSTAR_MSR        0xC0000082
+#define IA32_CSTAR_MSR        0xC0000083
+#define IA32_SFMASK_MSR       0xC0000084
+
 b32
 cpu_has_msr();
 

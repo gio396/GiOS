@@ -1,5 +1,6 @@
 #include <common.h>
 
+#include <arch/x86/register.h>
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/gdt.h>
 #include <arch/x86/idt.h>
@@ -10,6 +11,7 @@
 #include <arch/x86/apic.h>
 #include <arch/x86/acpi.h>
 #include <arch/x86/pit.h>
+
 
 #include <timer.h>
 #include <time.h>
