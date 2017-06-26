@@ -29,7 +29,7 @@ uint32 *first_page_table;
 //   If page is called but not pressent page fault will occur and OS will ned to handle it
 //   If present bit is not set os can use rest of 31 bits to store information.
 
-//singlse Page table entry
+//single Page table entry
 //    31         11    9  8  7  6  5  4  3  2  1  0
 //PTE [ADDR-*20*-|AVL--|G-|0-|D-|A-|C-|W-|U-|R-|P-]
 //ADDR: Physical adress where virtual adress should be mapped to.
@@ -164,7 +164,6 @@ kalloc()
 void
 kfree(void* v)
 {
-  (void)(v);
   assert1(v);
   assert1(ALIGNED((uint32)v, kb(4)));
 

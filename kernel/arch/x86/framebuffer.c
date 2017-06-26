@@ -345,7 +345,7 @@ terminal_next_line(struct terminal_state *state)
   }
 
   terminal_clear_row(state);
-  terminal_put_string(state, ">> ");
+  terminal_put_string(state, ">>");
 }
 
 void 
@@ -426,6 +426,22 @@ terminal_init(struct terminal_state *state)
       terminal_set_char(state, idx, default_empty_char);
 }
 
+int32
+get_width(const int8 *str)
+{
+  int32 res = 0;
+  int8 *c = (int8*)str;
+
+  while(*c >= '0' && *c <= '9')
+  {
+    res *= 10;
+    res += (*c - '0');
+    ++c;
+  }
+
+  return res;
+}
+
 void
 printk(struct terminal_state *state, const int8 *format, ...)
 {
@@ -433,7 +449,7 @@ printk(struct terminal_state *state, const int8 *format, ...)
   const int8 *run_start;
   b32 run;
   int32 width, val, len;
-
+  int8 wchar;
 
   va_list args;
   va_start(args, format);
@@ -452,11 +468,15 @@ printk(struct terminal_state *state, const int8 *format, ...)
         run++;
       }
 
-      width = atoi(run_start);
+      width = get_width(run_start);
+
+      if (width > 0)
+      {
+        wchar = (*run_start == '0' ? '0':' ');
+      }
 
       switch (nxt)
       {
-        //signed integer base 10
         case 'd':
         case 'i':
         {
@@ -469,8 +489,7 @@ printk(struct terminal_state *state, const int8 *format, ...)
           {
             len = strlen(buffer);
             while (len++ < width)
-              terminal_put_char(state, '0');
-
+              terminal_put_char(state, wchar);
           }
 
           terminal_put_string(state, buffer);
@@ -487,7 +506,7 @@ printk(struct terminal_state *state, const int8 *format, ...)
           {
             len = strlen(buffer);
             while (len++ < width)
-              terminal_put_char(state, '0');
+              terminal_put_char(state, wchar);
           }
 
           terminal_put_string(state, buffer);
@@ -504,7 +523,7 @@ printk(struct terminal_state *state, const int8 *format, ...)
           {
             len = strlen(buffer);
             while(len++ < width)
-              terminal_put_char(state, '0');
+              terminal_put_char(state, wchar);
 
           }
 
@@ -522,7 +541,7 @@ printk(struct terminal_state *state, const int8 *format, ...)
           {
             len = strlen(buffer);
             while(len++ < width)
-              terminal_put_char(state, '0');
+              terminal_put_char(state, wchar);
 
           }
 
@@ -541,7 +560,7 @@ printk(struct terminal_state *state, const int8 *format, ...)
           {
             len = strlen(buffer);
             while(len++ < width)
-              terminal_put_char(state, '0');
+              terminal_put_char(state, wchar);
 
           }
 

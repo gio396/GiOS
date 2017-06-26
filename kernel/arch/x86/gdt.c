@@ -59,7 +59,7 @@
 internal void
 gdt_set_gate(int32 num, uint32 base, uint32 limit, uint16 flags)
 {
-  printk(&state, "Setting gdt %d, base 0x%8X, limit 0x%8X, flags %16b\n",
+  printk(&state, "Setting gdt %d, base 0x%08X, limit 0x%08X, flags %016b\n",
          num, base, limit, flags);
 
   gdt[num].base_low     = (base & 0x0000FFFF);
@@ -85,7 +85,7 @@ gdt_install()
   gp.limit = (sizeof(struct gdt_entry) * 3) - 1;
   gp.base = (int32)&gdt;
 
-  printk(&state, "GDT limit 0x%4X. base 0x%8X\n",
+  printk(&state, "GDT limit 0x%04X. base 0x%08X\n",
          gp.limit, gp.base);
 
   // null descriptor
@@ -107,5 +107,5 @@ gdt_install()
   gdt_set_gate(5, (uint32)&tss_entry, (uint32)(&tss_entry + 1), GDT_TSS_PL0);
 
   gdt_flush((int32)&gp);
-  printk(&state, "Flushed GP at 0x%8X\n", (int32)&gp);
+  printk(&state, "Flushed GP at 0x%08X\n", (int32)&gp);
 }

@@ -237,18 +237,18 @@ parse_madt_table(void)
       case 0:
       {
         printk(&state, "Printing madt of type 0\n");
-        printk(&state, "  ACPI processor Id    %02X\n", cur->ent0.apic_processor_id);
-        printk(&state, "  ACPI id              %02X\n", cur->ent0.apic_id);
-        printk(&state, "  flags                %08X\n", cur->ent0.flags);
+        printk(&state, "  ACPI processor Id   0x%02X\n", cur->ent0.apic_processor_id);
+        printk(&state, "  ACPI id             0x%02X\n", cur->ent0.apic_id);
+        printk(&state, "  flags               0x%08X\n", cur->ent0.flags);
         break;
       }
 
       case 1:
       {
         printk(&state, "Printing madt of type 1\n");
-        printk(&state, "  IOAPIC id:           %02X\n", cur->ent1.ioapic_id);
-        printk(&state, "  IOAPIC address       %04X\n", cur->ent1.ioapic_addr);
-        printk(&state, "  Global SYS INT base  %08X\n", cur->ent1.global_system_interrupt_base);
+        printk(&state, "  IOAPIC id:          0x%02X\n", cur->ent1.ioapic_id);
+        printk(&state, "  IOAPIC address      0x%04X\n", cur->ent1.ioapic_addr);
+        printk(&state, "  Global SYS INT base 0x%08X\n", cur->ent1.global_system_interrupt_base);
 
         ioapic.ioapic_addr = cur->ent1.ioapic_addr;
         ioapic.ioapic_id = cur->ent1.ioapic_id;
@@ -258,27 +258,27 @@ parse_madt_table(void)
       case 2:
       {
         printk(&state, "Printing madt of type 2\n");
-        printk(&state, "  Bus source           %02X\n", cur->ent2.bus_source);
-        printk(&state, "  irq source           %02X\n", cur->ent2.irq_source);
-        printk(&state, "  Global SYS INT       %08X\n", cur->ent2.global_system_interrupt);
-        printk(&state, "  flags                %04X\n", cur->ent2.flags);
+        printk(&state, "  Bus source          0x%02X\n", cur->ent2.bus_source);
+        printk(&state, "  irq source          0x%02X\n", cur->ent2.irq_source);
+        printk(&state, "  Global SYS INT      0x%08X\n", cur->ent2.global_system_interrupt);
+        printk(&state, "  flags               0x%04X\n", cur->ent2.flags);
         break;
       }
 
       case 3:
       {
         printk(&state, "Printing madt of type 3\n");
-        printk(&state, "  Global SYS INT       %08X\n", cur->ent3.global_system_interrupt);
-        printk(&state, "  flags                %04X\n", cur->ent3.flags);
+        printk(&state, "  Global SYS INT      0x%08X\n", cur->ent3.global_system_interrupt);
+        printk(&state, "  flags               0x%04X\n", cur->ent3.flags);
         break;
       }
 
       case 4:
       {
         printk(&state, "Printing madt of type 4\n");
-        printk(&state, "  ACPI processor Id    %02X\n", cur->ent4.apic_processor_id);
-        printk(&state, "  local apic inti#     %04X\n", cur->ent4.local_apic_inti);
-        printk(&state, "  flags                %02X\n", cur->ent4.flags);
+        printk(&state, "  ACPI processor Id   0x%02X\n", cur->ent4.apic_processor_id);
+        printk(&state, "  local apic inti#    0x%04X\n", cur->ent4.local_apic_inti);
+        printk(&state, "  flags               0x%02X\n", cur->ent4.flags);
         break;
       }
     }

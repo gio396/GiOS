@@ -117,4 +117,6 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
+
+  printk(&state, "%d\n", atoi("-12"));
 }
