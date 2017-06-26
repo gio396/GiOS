@@ -94,6 +94,11 @@ keyboard_handler(/*const union biosregs *ireg*/)
         terminal_move(&state, TERM_DIRECTION_DOWN);
         break;
       }
+      case 0:
+      {
+        //ignore
+        break;
+      }
       default:
         terminal_put_char(&state, kbdlt[scancode]);
     }

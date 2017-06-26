@@ -23,6 +23,9 @@
 #define VGA_PSIZE        sizeof(uint16)
 #define VGA_MEM_LOCATION 0xC00B8000
 
+#define CURSOR_CHAR_CODE   219
+#define CURSOR_CHAR(state) VGA_CHAR_COLOR(CURSOR_CHAR_CODE, (state).terminal_color)
+
 uint16 *vga_buffer = (uint16*)(VGA_MEM_LOCATION); 
 struct terminal_state state;
 struct terminal_state *current_state;
@@ -154,7 +157,7 @@ terminal_move(struct terminal_state *state, int32 direction)
     uint32 index = state -> terminal_row * VGA_WIDTH + state -> terminal_column;
 
     cursor_char = vga_get_char(index);
-    vga_set_char(index, VGA_CHAR_COLOR('a', state->terminal_color));
+    vga_set_char(index, CURSOR_CHAR(*state));
   }
 
   return res;
@@ -370,20 +373,6 @@ terminal_advance_one(struct terminal_state *state)
       terminal_clear_row(state);
   }
 
-  if (++state->terminal_column >= VGA_WIDTH)
-  {
-    state->terminal_column = 0;
-
-    if (++state->terminal_row >= VGA_HEIGHT)
-    {
-      terminal_save_state(state);
-
-      state->terminal_row = 0;
-    }
-
-    terminal_clear_row(state);
-  }
-
   return result;
 }
 
@@ -409,15 +398,7 @@ terminal_delete_one(struct terminal_state *state)
 
   terminal_set_char(state, result, default_empty_char);
 
-  if (--state->terminal_column <= 0)
-  {
-    state->terminal_column = VGA_WIDTH - 1;
-
-    if (--state->terminal_row <= 0)
-    {
-      state->terminal_row = VGA_HEIGHT - 1;
-    }
-  }
+  terminal_move(state, TERM_DIRECTION_LEFT);
 
   return(result);
 }
@@ -436,9 +417,14 @@ terminal_next_line(struct terminal_state *state)
     tbl_head = CONTAINER_OF(head_root.dlist_node, struct terminal_back_list, node);
 
     tbl_head->left -= VGA_WIDTH - state->terminal_column;
+
+  }
+  else
+  {
+    vga_set_char(state -> terminal_row * VGA_WIDTH + state -> terminal_column, cursor_char);
   }
 
-  state->terminal_column = 0;
+  state -> terminal_column = 0;
 
   if (++state->terminal_row >= VGA_HEIGHT)
   {
@@ -448,6 +434,11 @@ terminal_next_line(struct terminal_state *state)
 
   terminal_clear_row(state);
   terminal_put_string(state, ">>");
+
+
+  uint32 index = state -> terminal_row * VGA_WIDTH + state -> terminal_column;
+  cursor_char = VGA_CHAR_COLOR('\0', state -> terminal_color);
+  vga_set_char(index, VGA_CHAR_COLOR(CURSOR_CHAR(*state), state -> terminal_color));
 }
 
 void 
