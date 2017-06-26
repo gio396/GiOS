@@ -4,7 +4,7 @@
 #include <common.h>
 #include <assert.h>
 
-#define OFFSET_OF(type, mbr) (int32)(&((type*)0)->mbr)
+#define OFFSET_OF(type, mbr) (size_t)(&((type*)0)->mbr)
 
 #define CONTAINER_OF(ptr, type, mbr) ({\
     const typeof( ((type *)0)->mbr ) *__mptr = (ptr);\

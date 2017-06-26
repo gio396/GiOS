@@ -19,7 +19,11 @@ typedef char          b8;
 typedef float r32;
 typedef double r64;
 
+#ifdef __i386__    
 typedef int32 size_t;
+#else //__x86_64__
+typedef int64 size_t;
+#endif
 
 #define internal       static
 #define global_persist static

@@ -117,7 +117,7 @@
 
 #define CLAMP(x, l, h) MIN(h, MAX(l, x))
 
-#define ALIGNED(adr, val) (((uint32)(adr) & ((val) - 1)) == 0)
+#define ALIGNED(adr, val) (((size_t)(adr) & ((val) - 1)) == 0)
 
 #define BYTE(x) (x)
 #define KBYTE(x) BYTE(x) * 1024

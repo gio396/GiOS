@@ -83,7 +83,7 @@ gdt_install()
   printk(&state, "Creating GDT table\n");
 
   gp.limit = (sizeof(struct gdt_entry) * 3) - 1;
-  gp.base = (int32)&gdt;
+  gp.base = (size_t)&gdt;
 
   printk(&state, "GDT limit 0x%04X. base 0x%08X\n",
          gp.limit, gp.base);
@@ -104,8 +104,8 @@ gdt_install()
   gdt_set_gate(4, 0, 0xFFFFFFFF, GDT_DATA_PL3);
 
   //tss
-  gdt_set_gate(5, (uint32)&tss_entry, (uint32)(&tss_entry + 1), GDT_TSS_PL0);
+  gdt_set_gate(5, (size_t)&tss_entry, (size_t)(&tss_entry + 1), GDT_TSS_PL0);
 
-  gdt_flush((int32)&gp);
-  printk(&state, "Flushed GP at 0x%08X\n", (int32)&gp);
+  gdt_flush((size_t)&gp);
+  printk(&state, "Flushed GP at 0x%08X\n", (size_t)&gp);
 }
