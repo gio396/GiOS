@@ -30,16 +30,16 @@ unsigned char kbdlt[128] =
     0,  /* 69 - Num lock*/
     0,  /* Scroll Lock */
     0,  /* Home key */
-    67,  /* Up Arrow */
-    0,  /* Page Up */
+    69,  /* Up Arrow */
+    67,  /* Page Up */
    '-',
-    0,  /* Left Arrow */
+    70,  /* Left Arrow */
     0,
-    0,  /* Right Arrow */
+    71,  /* Right Arrow */
    '+',
     0,  /* 79 - End key*/
-    68,  /* Down Arrow */
-    0,  /* Page Down */
+    72,  /* Down Arrow */
+    68,  /* Page Down */
     0,  /* Insert Key */
     0,  /* Delete Key */
     0,   0,   0,
@@ -69,13 +69,31 @@ keyboard_handler(/*const union biosregs *ireg*/)
         terminal_load_prev();
         break;
       }
-
       case 68:
       {
         terminal_load_next();
         break;
       }
-
+      case 69:
+      {
+        terminal_move(&state, TERM_DIRECTION_UP);
+        break;
+      }
+      case 70:
+      {
+        terminal_move(&state, TERM_DIRECTION_LEFT);
+        break;
+      }
+      case 71:
+      {
+        terminal_move(&state, TERM_DIRECTION_RIGHT);
+        break;
+      }
+      case 72:
+      {
+        terminal_move(&state, TERM_DIRECTION_DOWN);
+        break;
+      }
       default:
         terminal_put_char(&state, kbdlt[scancode]);
     }

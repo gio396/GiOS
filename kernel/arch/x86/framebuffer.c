@@ -27,6 +27,8 @@ uint16 *vga_buffer = (uint16*)(VGA_MEM_LOCATION);
 struct terminal_state state;
 struct terminal_state *current_state;
 
+int32 cursor_char = 0;
+
 internal void 
 vga_move_cursor(uint32 index)
 {
@@ -40,6 +42,12 @@ internal void
 vga_set_char(uint32 index, uint16 val)
 {
   vga_buffer[index] = val;
+}
+
+internal uint16
+vga_get_char(uint32 index)
+{
+  return vga_buffer[index];
 }
 
 internal void
@@ -65,6 +73,91 @@ terminal_copy_buffer(struct terminal_state *state,
                      uint16 size)
 {
   memcpy(state->terminal_buffer + index, dst, size * VGA_PSIZE);
+}
+
+int32
+terminal_move(struct terminal_state *state, int32 direction)
+{
+  int32 last_row;
+  int32 last_column;
+  int32 res = 0;
+
+  if (state == current_state)
+  {
+    last_row = state -> terminal_row;
+    last_column = state -> terminal_column;
+  }
+
+  switch (direction)
+  {
+    case TERM_DIRECTION_UP:
+    {
+      --state -> terminal_row;
+
+      if (state -> terminal_row < 0)
+      {
+        state -> terminal_row = VGA_HEIGHT - 1;
+        res = 1;
+      }
+
+      break;
+    }
+    case TERM_DIRECTION_DOWN:
+    {
+      ++state -> terminal_row;
+
+      if (state -> terminal_row > VGA_HEIGHT)
+      {
+        state -> terminal_row = 0;
+        res = 1;
+      }
+      break;
+    }
+    case TERM_DIRECTION_LEFT:
+    {
+      --state -> terminal_column;
+      if (state -> terminal_column < 0)
+      {
+        state -> terminal_column = VGA_WIDTH - 1;
+        --state -> terminal_row;
+        res = 1;
+
+        if (state -> terminal_row < 0)
+        {
+          state -> terminal_row = 0;
+          res = 2;
+        }
+      }
+      break;
+    }
+    case TERM_DIRECTION_RIGHT:
+    {
+      ++state -> terminal_column;
+      if (state -> terminal_column >= VGA_WIDTH)
+      {
+        state -> terminal_column = 0;
+        ++state -> terminal_row;
+        res = 1;
+        if (state -> terminal_row >= VGA_HEIGHT)
+        {
+          state -> terminal_row = 0;
+          res = 2;
+        }
+      }
+      break;
+    }
+  }
+
+  if (state == current_state && state -> terminal_buffer == vga_buffer)
+  {
+    vga_set_char(last_row * VGA_WIDTH + last_column, cursor_char);
+    uint32 index = state -> terminal_row * VGA_WIDTH + state -> terminal_column;
+
+    cursor_char = vga_get_char(index);
+    vga_set_char(index, VGA_CHAR_COLOR('a', state->terminal_color));
+  }
+
+  return res;
 }
 
 internal void
@@ -258,7 +351,6 @@ terminal_advance_one(struct terminal_state *state)
   struct terminal_back_list *tbl_head;
   uint32 result;
 
-
   result = state->terminal_column + state->terminal_row * VGA_WIDTH;
 
   if (state->terminal_buffer != vga_buffer)
@@ -266,6 +358,16 @@ terminal_advance_one(struct terminal_state *state)
     head_root = state->head;
     tbl_head = CONTAINER_OF(head_root.dlist_node, struct terminal_back_list, node); 
     tbl_head->left--;
+  }
+
+  int32 op = terminal_move(state, TERM_DIRECTION_RIGHT);
+
+  switch (op)
+  {
+    case 2:
+      terminal_save_state(state);
+    case 1:
+      terminal_clear_row(state);
   }
 
   if (++state->terminal_column >= VGA_WIDTH)
@@ -601,3 +703,4 @@ printk(struct terminal_state *state, const int8 *format, ...)
     format++;
   }
 }
+

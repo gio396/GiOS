@@ -36,6 +36,11 @@
 #define DEFAULT_TERMINAL   SEG_WRITE(1) | SEG_STLIMIT(0) | SEG_LIMIT(0)
 #define SECONDARY_TERMINAL SEG_WRITE(0) | SEG_STLIMIT(1) | SEG_LIMIT(20)
 
+#define TERM_DIRECTION_UP     0
+#define TERM_DIRECTION_DOWN   1
+#define TERM_DIRECTION_LEFT   2
+#define TERM_DIRECTION_RIGHT  3
+
 //terminal flags
 //8         2    1   0
 //[LMT------|STL-|wr-]
@@ -75,6 +80,9 @@ terminal_load_prev();
 
 void
 terminal_load_next();
+
+int32
+terminal_move(struct terminal_state *state, int32 direction);
 
 void
 printk(struct terminal_state *state, const int8 *format, ...);
