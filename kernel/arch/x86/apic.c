@@ -234,14 +234,17 @@ parse_madt_table(void)
   {
     switch(cur->ent0.header.entry_type)
     {
-      CASE(
+      case 0:
+      {
         printk(&state, "Printing madt of type 0\n");
         printk(&state, "  ACPI processor Id    %02X\n", cur->ent0.apic_processor_id);
         printk(&state, "  ACPI id              %02X\n", cur->ent0.apic_id);
         printk(&state, "  flags                %08X\n", cur->ent0.flags);
-        ,0);
+        break;
+      }
 
-      CASE(
+      case 1:
+      {
         printk(&state, "Printing madt of type 1\n");
         printk(&state, "  IOAPIC id:           %02X\n", cur->ent1.ioapic_id);
         printk(&state, "  IOAPIC address       %04X\n", cur->ent1.ioapic_addr);
@@ -249,28 +252,35 @@ parse_madt_table(void)
 
         ioapic.ioapic_addr = cur->ent1.ioapic_addr;
         ioapic.ioapic_id = cur->ent1.ioapic_id;
-        ,1);
-      
-      CASE(
+        break;
+      }
+
+      case 2:
+      {
         printk(&state, "Printing madt of type 2\n");
         printk(&state, "  Bus source           %02X\n", cur->ent2.bus_source);
         printk(&state, "  irq source           %02X\n", cur->ent2.irq_source);
         printk(&state, "  Global SYS INT       %08X\n", cur->ent2.global_system_interrupt);
         printk(&state, "  flags                %04X\n", cur->ent2.flags);
-        ,2);
+        break;
+      }
 
-      CASE(
+      case 3:
+      {
         printk(&state, "Printing madt of type 3\n");
         printk(&state, "  Global SYS INT       %08X\n", cur->ent3.global_system_interrupt);
         printk(&state, "  flags                %04X\n", cur->ent3.flags);
-        ,3);
+        break;
+      }
 
-      CASE(
+      case 4:
+      {
         printk(&state, "Printing madt of type 4\n");
         printk(&state, "  ACPI processor Id    %02X\n", cur->ent4.apic_processor_id);
         printk(&state, "  local apic inti#     %04X\n", cur->ent4.local_apic_inti);
         printk(&state, "  flags                %02X\n", cur->ent4.flags);
-        ,4);
+        break;
+      }
     }
 
 

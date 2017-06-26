@@ -64,13 +64,17 @@ keyboard_handler(/*const union biosregs *ireg*/)
   {
     switch(kbdlt[scancode])
     {
-      CASE(
+      case 67:
+      {
         terminal_load_prev();
-      , 67);
+        break;
+      }
 
-      CASE(
+      case 68:
+      {
         terminal_load_next();
-      , 68);
+        break;
+      }
 
       default:
         terminal_put_char(&state, kbdlt[scancode]);

@@ -4,7 +4,7 @@
 #include <arch/x86/register.h>
 #include <arch/x86/io.h>
 
-#include <memory.h>
+#include <string.h>
 
 #define def_isr(num) extern void isr##num(void)
 

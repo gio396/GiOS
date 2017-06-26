@@ -6,7 +6,7 @@
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/page.h>
 
-#include <memory.h>
+#include <string.h>
 #include <list.h>
 
 #define MAX_TIMERS  4096 / sizeof(struct timer_list_entry)

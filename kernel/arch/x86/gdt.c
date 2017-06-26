@@ -3,7 +3,7 @@
 #include <common.h>
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/io.h>
-#include <syscall.h>
+#include <sched.h>
 
 
 #define SEG_PRES(x) ((x) << 0x0F) // 1 present 0 not present
@@ -52,8 +52,6 @@
                         SEG_GRAN(1) | SEG_OPSZ(1) | SEG_LONG(0) | \
                         SEG_SAVL(1) | SEG_CODE_EXA
 
-
-struct tss_entry tss_entry;
 
 //sets gdt_gate at num index.
 //      16 15    13  12    8  7   6  5  4        0

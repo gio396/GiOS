@@ -7,7 +7,7 @@
 
 #include <macros.h>
 #include <assert.h>
-#include <memory.h>
+#include <string.h>
 
 extern const uint32 l_ekernel;
 uint32 *page_directory_entry;

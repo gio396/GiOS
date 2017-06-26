@@ -4,7 +4,7 @@
 #include <arch/x86/io.h>
 
 #include <string.h>
-#include <memory.h>
+#include <string.h>
 
 #define SIGNATURE "RSD PTR "
 #define MEM_START (int8*)(0x000E0000)

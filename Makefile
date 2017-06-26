@@ -1,14 +1,20 @@
 CC=gcc
 GDB=gdb
 
-CFLAGS=-m32 -O3 -nostdlib -nostdinc -fno-builtifn -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding -ggdb
+CFLAGS= -m32 -O0 -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding 
 CINCLUDES=-I kernel/  -I libc/
 
 LDFLAGS=-T link.ld -melf_i386 
 
+export CFLAGS
+export CC
+
 OBJS=$(.o)
 AS=nasm
 ASFLAGS=-f elf
+
+export AS
+export ASFLAGS
 
 SUBDIRS:=kernel libc
 SUBDIRSCLEAN:=$(addsuffix  .clean ,$(SUBDIRS))

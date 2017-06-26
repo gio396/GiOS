@@ -18,7 +18,7 @@
 #include <keyboard.h>
 #include <mboot_header.h>
 
-#include <memory.h>
+#include <string.h>
 #include <assert.h>
 #include <macros.h>
 

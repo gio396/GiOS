@@ -5,7 +5,6 @@
 #include <arch/x86/irq.h>
 
 #include <string.h>
-#include <memory.h>
 #include <stdarg.h>
 #include <macros.h>
 #include <list.h>
@@ -355,7 +354,6 @@ terminal_put_char(struct terminal_state *st, int8 c)
   int32 idx;
   int16 val;
 
-
   if(st == current_state && current_state->terminal_buffer != vga_buffer)
     terminal_load_head();
 
@@ -368,13 +366,17 @@ terminal_put_char(struct terminal_state *st, int8 c)
 
   switch(c)
   {
-    CASE(
+    case '\b':
+    {
       terminal_delete_one(st);
-    , '\b');
+      break;
+    }
 
-    CASE(
+    case '\n':
+    {      
       terminal_next_line(st);
-    , '\n');
+      break;
+    }
 
     default:
     {
@@ -455,7 +457,9 @@ printk(struct terminal_state *state, const int8 *format, ...)
       switch (nxt)
       {
         //signed integer base 10
-        CASE(
+        case 'd':
+        case 'i':
+        {
           val = va_arg(args, int32);
           int8 buffer[12];
 
@@ -470,12 +474,14 @@ printk(struct terminal_state *state, const int8 *format, ...)
           }
 
           terminal_put_string(state, buffer);
-        , 'd', 'i');
+          break;
+        }
 
-        CASE(
+        case 'u':
+        {
           val = va_arg(args, int32);
-          char buffer[12];
-          uitoa(val, buffer);
+          int8 buffer[12];
+          uitoa(val, buffer, 10);
 
           if (run)
           {
@@ -485,11 +491,13 @@ printk(struct terminal_state *state, const int8 *format, ...)
           }
 
           terminal_put_string(state, buffer);
-        , 'u');
+          break;
+        }
 
-        CASE(
+        case 'x':
+        {
           val = va_arg(args, int32);
-          char buffer[12];
+          int8 buffer[12];
           itoa(val, buffer, 16);
 
           if (run)
@@ -501,11 +509,13 @@ printk(struct terminal_state *state, const int8 *format, ...)
           }
 
           terminal_put_string(state, buffer);
-        , 'x');
+          break;
+        }
 
-        CASE(
+        case 'X':
+        {
           val = va_arg(args, int32);
-          char buffer[12];
+          int8 buffer[12];
           itoa(val, buffer, 16);
 
           if (run)
@@ -518,11 +528,13 @@ printk(struct terminal_state *state, const int8 *format, ...)
 
           to_upper(buffer);
           terminal_put_string(state, buffer);
-        , 'X');
+          break;
+        }
 
-        CASE(
+        case 'b':
+        {
           val = va_arg(args, int32);
-          char buffer[33];
+          int8 buffer[33];
           itoa(val, buffer, 2);
 
           if (run)
@@ -534,21 +546,28 @@ printk(struct terminal_state *state, const int8 *format, ...)
           }
 
           terminal_put_string(state, buffer);
-        , 'b');
+          break;
+        }
 
-        CASE(
-          chr = va_arg(args, int8);
+        case 'c':
+        {
+          chr = va_arg(args, int32);
           terminal_put_char(state, chr);
-        , 'c');
+          break;
+        }
 
-        CASE(
+        case 's':
+        {
           str = va_arg(args, int8*);
           terminal_put_string(state, str);
-        , 's');
+          break;
+        }
 
-        CASE(
+        case '%':
+        {
           terminal_put_char(state, '%');
-        , '%');
+          break;
+        }
       }
     }
     else if(*format == '\\')
