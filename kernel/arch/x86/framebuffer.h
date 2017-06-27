@@ -81,7 +81,7 @@ terminal_load_prev();
 void
 terminal_load_next();
 
-int32
+void
 terminal_move(struct terminal_state *state, int32 direction);
 
 void

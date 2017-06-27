@@ -79,7 +79,7 @@ terminal_copy_buffer(struct terminal_state *state,
 }
 
 int32
-terminal_move(struct terminal_state *state, int32 direction)
+terminal_move_(struct terminal_state *state, int32 direction)
 {
   int32 last_row;
   int32 last_column;
@@ -109,7 +109,7 @@ terminal_move(struct terminal_state *state, int32 direction)
     {
       ++state -> terminal_row;
 
-      if (state -> terminal_row > VGA_HEIGHT)
+      if (state -> terminal_row >= VGA_HEIGHT)
       {
         state -> terminal_row = 0;
         res = 1;
@@ -119,6 +119,7 @@ terminal_move(struct terminal_state *state, int32 direction)
     case TERM_DIRECTION_LEFT:
     {
       --state -> terminal_column;
+
       if (state -> terminal_column < 0)
       {
         state -> terminal_column = VGA_WIDTH - 1;
@@ -127,7 +128,7 @@ terminal_move(struct terminal_state *state, int32 direction)
 
         if (state -> terminal_row < 0)
         {
-          state -> terminal_row = 0;
+          state -> terminal_row = VGA_HEIGHT - 1;
           res = 2;
         }
       }
@@ -136,6 +137,7 @@ terminal_move(struct terminal_state *state, int32 direction)
     case TERM_DIRECTION_RIGHT:
     {
       ++state -> terminal_column;
+
       if (state -> terminal_column >= VGA_WIDTH)
       {
         state -> terminal_column = 0;
@@ -363,7 +365,7 @@ terminal_advance_one(struct terminal_state *state)
     tbl_head->left--;
   }
 
-  int32 op = terminal_move(state, TERM_DIRECTION_RIGHT);
+  int32 op = terminal_move_(state, TERM_DIRECTION_RIGHT);
 
   switch (op)
   {
@@ -398,7 +400,7 @@ terminal_delete_one(struct terminal_state *state)
 
   terminal_set_char(state, result, default_empty_char);
 
-  terminal_move(state, TERM_DIRECTION_LEFT);
+  terminal_move_(state, TERM_DIRECTION_LEFT);
 
   return(result);
 }
@@ -695,3 +697,8 @@ printk(struct terminal_state *state, const int8 *format, ...)
   }
 }
 
+void
+terminal_move(struct terminal_state *state, int32 direction)
+{
+  terminal_move_(state, direction);
+}
