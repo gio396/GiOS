@@ -18,16 +18,16 @@ void
 irq_install(void);
 
 void
-irq_set_handler(uint8 num, void* handler);
+irq_set_handler(u8 num, void* handler);
 
 void
-irq_clear_handler(uint8 num);
+irq_clear_handler(u8 num);
 
 void
-set_interrupt_masks(uint8 mask1, uint8 mask2);
+set_interrupt_masks(u8 mask1, u8 mask2);
 
 void
-get_interrupt_masks(uint8 *mask1, uint8 *mask2);
+get_interrupt_masks(u8 *mask1, u8 *mask2);
 
 void
 disable_interrupts(void);

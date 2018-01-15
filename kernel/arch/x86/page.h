@@ -17,16 +17,16 @@ void
 page_init();
 
 extern void
-enable_paging(uint32 page_directory_ptr);
+enable_paging(u32 page_directory_ptr);
 
-extern int32
+extern i32
 check_pmode();
 
 void *
 get_physaddr(void *virtaddr);
 
 void
-map_page(void* physaddr, void* virtaddr, uint32 flags);
+map_page(void* physaddr, void* virtaddr, u32 flags);
 
 // alocates 4kb phys memory and returns adresss
 // 1 to 1 mapping

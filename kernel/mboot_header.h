@@ -24,64 +24,64 @@
 struct multiboot_header
 {
   //Must be equal to MULTIBOOT_HEADER_MAGIC
-  uint32 magic;
+  u32 magic;
 
   //Feature flags
-  uint32 flags;
+  u32 flags;
 
   //Flags + checksum must be equal to 0
-  uint32 checksum;
+  u32 checksum;
 
   //This are valid if MULTIBOOT_AOUT_KLUDGE bit is set.
-  uint32 header_addr;
-  uint32 load_addr;
-  uint32 load_end_addr;
-  uint32 bss_end_addr;
-  uint32 entry_addr;
+  u32 header_addr;
+  u32 load_addr;
+  u32 load_end_addr;
+  u32 bss_end_addr;
+  u32 entry_addr;
 
   //This are valid if MULTIBOOT_VIDEO_MODE bit is set.
-  uint32 mode_type;
-  uint32 width;
-  uint32 height;
-  uint32 depth;
+  u32 mode_type;
+  u32 width;
+  u32 height;
+  u32 depth;
 };
 
 //The symbol table for a.out.
 struct multiboot_aout_symbol_table
 {
-  uint32 tablesize;
-  uint32 strsize;
-  uint32 addr;
-  uint32 reserved;
+  u32 tablesize;
+  u32 strsize;
+  u32 addr;
+  u32 reserved;
 };
 
 //The section header table for ELF.
 struct multoboot_elf_section_header_table
 {
-  uint32 num;
-  uint32 size;
-  uint32 addr;
-  uint32 shndx;
+  u32 num;
+  u32 size;
+  u32 addr;
+  u32 shndx;
 };
 
 struct multiboot_info
 {
   //Multiboot version number.
-  uint32 flags;
+  u32 flags;
 
   //Available memroy from BIOS.
-  uint32 mem_lower;
-  uint32 mem_upper;
+  u32 mem_lower;
+  u32 mem_upper;
 
   //"root" partition.
-  uint32 boot_device;
+  u32 boot_device;
 
   //Kernel command line.
-  uint32 cmdline;
+  u32 cmdline;
 
   //Boot-Module list.
-  uint32 mods_count;
-  uint32 mods_addr;
+  u32 mods_count;
+  u32 mods_addr;
 
   union
   {
@@ -90,89 +90,89 @@ struct multiboot_info
   } u;
 
   //Memory Mapping buffer.
-  uint32 mmap_length;
-  uint32 mmap_addr;
+  u32 mmap_length;
+  u32 mmap_addr;
 
   //Drive info buffer.
-  uint32 drives_length;
-  uint32 drives_addr;
+  u32 drives_length;
+  u32 drives_addr;
 
   //ROM configuration table.
-  uint32 rom_cinfig_table;
+  u32 rom_cinfig_table;
 
   //Boot Loader name
-  uint32 boot_loader_name;
+  u32 boot_loader_name;
 
   //APM table
-  uint32 apm_table;
+  u32 apm_table;
 
   //video
-  uint32 vbe_control_info;
-  uint32 vbe_mode_info;
-  uint16 vbe_mode;
-  uint16 vbe_interface_seg;
-  uint16 vbe_interface_off;
-  uint16 vbe_interface_len;
+  u32 vbe_control_info;
+  u32 vbe_mode_info;
+  i16 vbe_mode;
+  i16 vbe_interface_seg;
+  i16 vbe_interface_off;
+  i16 vbe_interface_len;
 
-  uint64 framebuffer_addr;
-  uint32 framebuffer_pitch;
-  uint32 framebuffer_width;
-  uint32 framebuffer_height;
-  uint8 framebuffer_bpp;
+  u64 framebuffer_addr;
+  u32 framebuffer_pitch;
+  u32 framebuffer_width;
+  u32 framebuffer_height;
+  u8 framebuffer_bpp;
 
-  uint8 framebuffer_type;
+  u8 framebuffer_type;
   union
   {
     struct
     {
-      uint32 framebuffer_pallete_addr;
-      uint16 framebuffer_pallete_num_colors;
+      u32 framebuffer_pallete_addr;
+      i16 framebuffer_pallete_num_colors;
     };
     struct
     {
-      uint8 framebuffer_red_field_position;
-      uint8 framebuffer_red_mask_size;
-      uint8 framebuffer_green_field_position;
-      uint8 framebuffer_green_mask_size;
-      uint8 framebuffer_blue_field_position;
-      uint8 framebuffer_blue_mask_size;
+      u8 framebuffer_red_field_position;
+      u8 framebuffer_red_mask_size;
+      u8 framebuffer_green_field_position;
+      u8 framebuffer_green_mask_size;
+      u8 framebuffer_blue_field_position;
+      u8 framebuffer_blue_mask_size;
     };
   };
 };
 
 struct multiboot_mmap_entry
 {
-  uint32 size;
-  uint64 addr;
-  uint64 len;
-  uint32 type;
+  u32 size;
+  u64 addr;
+  u64 len;
+  u32 type;
 } att_packed;
 
 struct multiboot_mod_list
 {
   //The memry used goes from bytes [mode_start, mod_end-1].
-  uint32 mod_start;
-  uint32 mod_end;
+  u32 mod_start;
+  u32 mod_end;
 
   //Module command line.
-  uint32 cmdline;
+  u32 cmdline;
 
   //Padding to make this 16 bytes must be zero
-  uint32 pad;
+  u32 pad;
 };
 
 //APM BIOS info.
 struct multiboot_apm_info
 {
-  uint16 version;
-  uint16 cseg;
-  uint32 offset;
-  uint16 cseg_16;
-  uint16 dseg;
-  uint16 flags;
-  uint16 cseg_len;
-  uint16 cseg_16_len;
-  uint16 dseg_len;
+  i16 version;
+  i16 cseg;
+  u32 offset;
+  i16 cseg_16;
+  i16 dseg;
+  i16 flags;
+  i16 cseg_len;
+  i16 cseg_16_len;
+  i16 dseg_len;
 };
 
 #endif //__MBOOT_HEADER_H__

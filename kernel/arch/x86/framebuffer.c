@@ -14,26 +14,26 @@
   ((bg) << 4) | (fg)
 
 #define VGA_CHAR_COLOR(uc, col)\
-  ((uint16)(uc) | ((uint16)(col) << 8))
+  ((i16)(uc) | ((i16)(col) << 8))
 
 #define FB_HIGH_BYTE_COMMAND    14
 #define FB_LOW_BYTE_COMMAND     15
 
-#define VGA_SIZE         VGA_WIDTH * VGA_HEIGHT * sizeof(uint16)
-#define VGA_PSIZE        sizeof(uint16)
+#define VGA_SIZE         VGA_WIDTH * VGA_HEIGHT * sizeof(i16)
+#define VGA_PSIZE        sizeof(i16)
 #define VGA_MEM_LOCATION 0xC00B8000
 
 #define CURSOR_CHAR_CODE   219
 #define CURSOR_CHAR(state) VGA_CHAR_COLOR(CURSOR_CHAR_CODE, (state).terminal_color)
 
-uint16 *vga_buffer = (uint16*)(VGA_MEM_LOCATION); 
+i16 *vga_buffer = (i16*)(VGA_MEM_LOCATION); 
 struct terminal_state state;
 struct terminal_state *current_state;
 
-int32 cursor_char = 0;
+i32 cursor_char = 0;
 
 internal void 
-vga_move_cursor(uint32 index)
+vga_move_cursor(u32 index)
 {
   outb(FB_COMMAND_PORT, FB_HIGH_BYTE_COMMAND);
   outb(FB_DATA_PROT, ((index >> 8) & 0x00FF));
@@ -42,19 +42,19 @@ vga_move_cursor(uint32 index)
 }
 
 internal void
-vga_set_char(uint32 index, uint16 val)
+vga_set_char(u32 index, i16 val)
 {
   vga_buffer[index] = val;
 }
 
-internal uint16
-vga_get_char(uint32 index)
+internal i16
+vga_get_char(u32 index)
 {
   return vga_buffer[index];
 }
 
 internal void
-terminal_set_char(struct terminal_state* state, uint32 index, uint16 val)
+terminal_set_char(struct terminal_state* state, u32 index, i16 val)
 {
   state->terminal_buffer[index] = val;
 }
@@ -62,8 +62,8 @@ terminal_set_char(struct terminal_state* state, uint32 index, uint16 val)
 internal void
 terminal_clear_row(struct terminal_state *state)
 {
-  uint32 offset = state->terminal_row * VGA_WIDTH;
-  uint16 val = VGA_CHAR_COLOR(0, state->terminal_color);
+  u32 offset = state->terminal_row * VGA_WIDTH;
+  i16 val = VGA_CHAR_COLOR(0, state->terminal_color);
 
   for (int i = 0; i < VGA_WIDTH; i++)
     terminal_set_char(state, offset + i, val);
@@ -71,19 +71,19 @@ terminal_clear_row(struct terminal_state *state)
 
 internal void
 terminal_copy_buffer(struct terminal_state *state, 
-                     uint16 index, 
-                     uint16 *dst, 
-                     uint16 size)
+                     i16 index, 
+                     i16 *dst, 
+                     i16 size)
 {
   memcpy(state->terminal_buffer + index, dst, size * VGA_PSIZE);
 }
 
-int32
-terminal_move_(struct terminal_state *state, int32 direction)
+i32
+terminal_move_(struct terminal_state *state, i32 direction)
 {
-  int32 last_row;
-  int32 last_column;
-  int32 res = 0;
+  i32 last_row = 0;
+  i32 last_column = 0;
+  i32 res = 0;
 
   if (state == current_state)
   {
@@ -156,7 +156,7 @@ terminal_move_(struct terminal_state *state, int32 direction)
   if (state == current_state && state -> terminal_buffer == vga_buffer)
   {
     vga_set_char(last_row * VGA_WIDTH + last_column, cursor_char);
-    uint32 index = state -> terminal_row * VGA_WIDTH + state -> terminal_column;
+    u32 index = state -> terminal_row * VGA_WIDTH + state -> terminal_column;
 
     cursor_char = vga_get_char(index);
     vga_set_char(index, CURSOR_CHAR(*state));
@@ -171,8 +171,8 @@ terminal_save_state(struct terminal_state *state)
   struct dlist_node *new_head, *head;
   struct dlist_root *head_root;
   struct terminal_back_list *tbl_head, *tbl_new_head;
-  uint16 default_empty_char;
-  int32 buffer_offset, right_edge, left_edge, length;
+  i16 default_empty_char;
+  i32 buffer_offset, right_edge, left_edge, length;
 
 
   new_head = NULL;
@@ -234,7 +234,7 @@ terminal_save_state(struct terminal_state *state)
     state->terminal_buffer = tbl_new_head->buffer;
   }
 
-  for(int32 i = 0; i < VGA_LENGTH; i++)
+  for(i32 i = 0; i < VGA_LENGTH; i++)
     terminal_set_char(state, i, default_empty_char);
 
   head_root->dlist_node = new_head;
@@ -243,8 +243,8 @@ terminal_save_state(struct terminal_state *state)
 void
 terminal_load_head()
 {
-  uint16 default_empty_char, used;
-  int32 idx;
+  i16 default_empty_char, used;
+  i32 idx;
   struct dlist_root *cur_root;
   struct dlist_node *head;
   struct terminal_back_list *tbl_next;
@@ -275,8 +275,8 @@ terminal_load_prev()
   struct dlist_root *cur_root, *head_root;
   struct dlist_node *cur, *head, *prev;
   struct terminal_back_list *tbl_prev, *tbl_head;
-  uint16 used;
-  int32 idx;
+  i16 used;
+  i32 idx;
 
   cur_root = &current_state->cur;
   cur = cur_root->dlist_node;
@@ -319,8 +319,8 @@ terminal_load_next()
   struct dlist_root *cur_root;
   struct dlist_node *cur, *next;
   struct terminal_back_list *tbl_next;
-  uint16 default_empty_char, used; 
-  int32 idx;
+  i16 default_empty_char, used; 
+  i32 idx;
 
 
   cur_root = &current_state->cur;
@@ -349,12 +349,12 @@ terminal_load_next()
   }
 }
 
-internal uint32 
+internal u32 
 terminal_advance_one(struct terminal_state *state)
 {
   struct dlist_root head_root;
   struct terminal_back_list *tbl_head;
-  uint32 result;
+  u32 result;
 
   result = state->terminal_column + state->terminal_row * VGA_WIDTH;
 
@@ -365,7 +365,7 @@ terminal_advance_one(struct terminal_state *state)
     tbl_head->left--;
   }
 
-  int32 op = terminal_move_(state, TERM_DIRECTION_RIGHT);
+  i32 op = terminal_move_(state, TERM_DIRECTION_RIGHT);
 
   switch (op)
   {
@@ -378,13 +378,13 @@ terminal_advance_one(struct terminal_state *state)
   return result;
 }
 
-internal uint32
+internal u32
 terminal_delete_one(struct terminal_state *state)
 {
   struct dlist_root head_root;
   struct terminal_back_list *tbl_head;
-  uint32 result;
-  uint16 default_empty_char;
+  u32 result;
+  i16 default_empty_char;
 
 
   default_empty_char = VGA_CHAR_COLOR(0, state->terminal_color);
@@ -438,26 +438,26 @@ terminal_next_line(struct terminal_state *state)
   terminal_put_string(state, ">>");
 
 
-  uint32 index = state -> terminal_row * VGA_WIDTH + state -> terminal_column;
+  u32 index = state -> terminal_row * VGA_WIDTH + state -> terminal_column;
   cursor_char = VGA_CHAR_COLOR('\0', state -> terminal_color);
   vga_set_char(index, VGA_CHAR_COLOR(CURSOR_CHAR(*state), state -> terminal_color));
 }
 
 void 
-terminal_put_char(struct terminal_state *st, int8 c)
+terminal_put_char(struct terminal_state *st, i8 c)
 {
-  int32 idx;
-  int16 val;
+  i32 idx;
+  i16 val;
 
   if(st == current_state && current_state->terminal_buffer != vga_buffer)
     terminal_load_head();
 
-  // #ifdef QEMU_DBG
-  if(st == &state)
+  #ifdef __GIOS_DEBUG__
+  if(st == &state && st->output_to_serial != 0)
   {
     write_serial(c);
   }
-  // #endif
+  #endif
 
   switch(c)
   {
@@ -484,11 +484,10 @@ terminal_put_char(struct terminal_state *st, int8 c)
 }
 
 void 
-terminal_put_string(struct terminal_state *state, const int8 *s)
+terminal_put_string(struct terminal_state *state, const i8 *s)
 {
-  int8 *it = (int8*)s;
-  int8 c;
-
+  i8 *it = (i8*)s;
+  i8 c;
 
   while (*it)
   {
@@ -501,14 +500,15 @@ terminal_put_string(struct terminal_state *state, const int8 *s)
 void 
 terminal_init(struct terminal_state *state)
 {
-  int32 idx;
-  uint16 default_empty_char;
+  i32 idx;
+  i16 default_empty_char;
 
   default_empty_char = VGA_CHAR_COLOR(0, state -> terminal_color);
   state->terminal_row = 0;
   state->terminal_column = 0;
-  state->terminal_buffer = (uint16 *)(VGA_MEM_LOCATION);
+  state->terminal_buffer = (i16 *)(VGA_MEM_LOCATION);
   state->terminal_color = VGA_COLOR(COLOR_BLACK, COLOR_GREEN);
+  state->output_to_serial = 0;
 
   state->head.dlist_node = NULL;
   state->cur.dlist_node = NULL;
@@ -521,11 +521,11 @@ terminal_init(struct terminal_state *state)
       terminal_set_char(state, idx, default_empty_char);
 }
 
-int32
-get_width(const int8 *str)
+i32
+get_width(const i8 *str)
 {
-  int32 res = 0;
-  int8 *c = (int8*)str;
+  i32 res = 0;
+  i8 *c = (i8*)str;
 
   while(*c >= '0' && *c <= '9')
   {
@@ -538,13 +538,13 @@ get_width(const int8 *str)
 }
 
 void
-printk(struct terminal_state *state, const int8 *format, ...)
+printk(struct terminal_state *state, const i8 *format, ...)
 {
-  int8 nxt, chr, *str;
-  const int8 *run_start;
+  i8 nxt, chr, *str;
+  const i8 *run_start;
   b32 run;
-  int32 width, val, len;
-  int8 wchar;
+  i32 width, val, len;
+  i8 wchar = 0;
 
   va_list args;
   va_start(args, format);
@@ -575,8 +575,8 @@ printk(struct terminal_state *state, const int8 *format, ...)
         case 'd':
         case 'i':
         {
-          val = va_arg(args, int32);
-          int8 buffer[12];
+          val = va_arg(args, i32);
+          i8 buffer[12];
 
           itoa(val, buffer, 10);
 
@@ -593,8 +593,8 @@ printk(struct terminal_state *state, const int8 *format, ...)
 
         case 'u':
         {
-          val = va_arg(args, int32);
-          int8 buffer[12];
+          val = va_arg(args, i32);
+          i8 buffer[12];
           uitoa(val, buffer, 10);
 
           if (run)
@@ -610,8 +610,8 @@ printk(struct terminal_state *state, const int8 *format, ...)
 
         case 'x':
         {
-          val = va_arg(args, int32);
-          int8 buffer[12];
+          val = va_arg(args, i32);
+          i8 buffer[12];
           itoa(val, buffer, 16);
 
           if (run)
@@ -628,8 +628,8 @@ printk(struct terminal_state *state, const int8 *format, ...)
 
         case 'X':
         {
-          val = va_arg(args, int32);
-          int8 buffer[12];
+          val = va_arg(args, i32);
+          i8 buffer[12];
           itoa(val, buffer, 16);
 
           if (run)
@@ -647,8 +647,8 @@ printk(struct terminal_state *state, const int8 *format, ...)
 
         case 'b':
         {
-          val = va_arg(args, int32);
-          int8 buffer[33];
+          val = va_arg(args, i32);
+          i8 buffer[33];
           itoa(val, buffer, 2);
 
           if (run)
@@ -665,14 +665,14 @@ printk(struct terminal_state *state, const int8 *format, ...)
 
         case 'c':
         {
-          chr = va_arg(args, int32);
+          chr = va_arg(args, i32);
           terminal_put_char(state, chr);
           break;
         }
 
         case 's':
         {
-          str = va_arg(args, int8*);
+          str = va_arg(args, i8*);
           terminal_put_string(state, str);
           break;
         }
@@ -684,10 +684,6 @@ printk(struct terminal_state *state, const int8 *format, ...)
         }
       }
     }
-    else if(*format == '\\')
-    {
-      terminal_put_char(state, *format);
-    }
     else
     {
       terminal_put_char(state, *format);
@@ -698,7 +694,7 @@ printk(struct terminal_state *state, const int8 *format, ...)
 }
 
 void
-terminal_move(struct terminal_state *state, int32 direction)
+terminal_move(struct terminal_state *state, i32 direction)
 {
   terminal_move_(state, direction);
 }

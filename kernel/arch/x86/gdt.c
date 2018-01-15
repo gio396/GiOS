@@ -57,7 +57,7 @@
 //      16 15    13  12    8  7   6  5  4        0
 //flags [P-|DPL--|DT-|0----|G-|DB-|0-|A-|TYPE----]
 internal void
-gdt_set_gate(int32 num, uint32 base, uint32 limit, uint16 flags)
+gdt_set_gate(i32 num, u32 base, u32 limit, i16 flags)
 {
   printk(&state, "Setting gdt %d, base 0x%08X, limit 0x%08X, flags %016b\n",
          num, base, limit, flags);

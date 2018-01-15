@@ -4,6 +4,6 @@
 #include <common.h>
 
 void
-keyboard_install(uint16 refresh_rate);
+keyboard_install(u16 refresh_rate);
 
 #endif

@@ -4,7 +4,7 @@
 *.obj
 *.elf
 *.bin
-
+*.raw
 
 # Precompiled Headers
 *.gch

@@ -41,3 +41,26 @@ dlist_get_tail(struct dlist_node *from)
 
   return from;
 }
+
+void
+dlist_insert(struct dlist_node *prev, struct dlist_node *new)
+{
+  new -> next = prev -> next;
+  if (new -> next) new -> next -> prev = new;
+
+  new -> prev = prev;
+  prev -> next = new;
+}
+
+void
+dlist_insert_tail(struct dlist_root *root, struct dlist_node *new)
+{
+  if (root -> dlist_node == NULL)
+  {
+    root -> dlist_node = new;
+    return;
+  }
+
+  struct dlist_node *tail = dlist_get_tail(root -> dlist_node);
+  dlist_insert(tail, new);
+}

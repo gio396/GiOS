@@ -8,10 +8,10 @@
 void
 init_pit_system_timer(void);
 
-uint32 
+u32 
 get_system_time_in_ms(void);
 
-uint32
+u32
 get_system_time_in_s(void);
 
 #endif //header guard

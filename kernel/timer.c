@@ -12,19 +12,21 @@
 #define MAX_TIMERS  4096 / sizeof(struct timer_list_entry)
 #define BITMAP_SIZE MAX_TIMERS >> 2
 
-global uint32 bit_map[BITMAP_SIZE];
+volatile b32 wakeup_flag = 0;
+
+global u32 bit_map[BITMAP_SIZE];
 
 struct
 {
-  uint8 *mem_start;
+  u8 *mem_start;
   struct slist_root head;
 } main_queue;
 
 struct
 {
-  uint32 irq_num;
-  void (*interrupt_in)(uint32 time);
-  uint32 (*timer_count)(void);
+  u32 irq_num;
+  void (*interrupt_in)(u32 time);
+  u32 (*timer_count)(void);
 } timer_info;
 
 void
@@ -49,7 +51,7 @@ timer_print_list(void)
 }
 
 void
-queue_sub_timer(uint32 passed)
+queue_sub_timer(u32 passed)
 {
   struct slist_node *it, *head;
   struct slist_root *head_root;
@@ -77,7 +79,7 @@ queue_sub_head_time(void)
 {
   struct slist_node *head;
   struct timer_list_entry *tle;
-  uint32 passed_time;
+  u32 passed_time;
 
   head = main_queue.head.slist_node;
 
@@ -86,6 +88,7 @@ queue_sub_head_time(void)
     tle = CONTAINER_OF(head, struct timer_list_entry, node);
 
     passed_time = tle -> timer - timer_info.timer_count();
+
     queue_sub_timer(passed_time); 
   }
 }
@@ -93,10 +96,11 @@ queue_sub_head_time(void)
 struct timer_list_entry *
 allocate_new_entry()
 {
-  uint32 i, zr;
+  u32 i, zr;
 
-  zr = 0;  
+  zr = 0;
 
+  //NOTE(GIO): Make this a lot faster... using intrinsics
   for (i = 0; i < BITMAP_SIZE; i++)
   {
     for (zr = 0; zr < 32; zr++)
@@ -115,22 +119,21 @@ allocate_new_entry()
 void
 queue_free(struct timer_list_entry *entry)
 {
-  uint32 diff, indx,bit;
+  u32 diff, indx,bit;
 
   diff = entry - (struct timer_list_entry*)main_queue.mem_start;
   indx = diff >> 5;
   bit = diff & 31;
 
-
   bit_map[indx] ^= ((0x1) << bit);
 }
 
 void
-timer_init(uint32 irq, void *interrupt_function, void *timer_count)
+timer_init(u32 irq, void *interrupt_function, void *timer_count)
 {
   main_queue.head.slist_node = NULL;
   main_queue.mem_start = kalloc();
-  memset(bit_map, 0x00, BITMAP_SIZE * sizeof(uint32));
+  memset(bit_map, 0x00, BITMAP_SIZE * sizeof(u32));
 
   timer_info.irq_num = irq;
   timer_info.interrupt_in = interrupt_function;
@@ -170,7 +173,7 @@ queue_find_loc(struct slist_node *entry)
 void
 queue_add_timer(struct timer_list_entry *new_entry)
 {
-  struct slist_node *entry_position;
+  struct slist_node *entry_position = NULL;
 
   if (new_entry !=  NULL)
   {
@@ -190,7 +193,9 @@ queue_add_timer(struct timer_list_entry *new_entry)
     }
   }
 
+  #ifdef __GIOS_DEBUG__
   timer_print_list();
+  #endif
 }
 
 void
@@ -235,8 +240,14 @@ timer_handler(/*regs*/)
 }
 
 void
-new_timer(uint32 time, timer_function_proc function, uint32 callback_arg)
+new_timer(u32 time, timer_function_proc function, u32 callback_arg)
 {
+  if (time == 0)
+  {
+    function(callback_arg);
+    return;
+  }
+
   struct timer_list_entry *new_tle;
 
   new_tle = allocate_new_entry();
@@ -248,3 +259,25 @@ new_timer(uint32 time, timer_function_proc function, uint32 callback_arg)
   queue_add_timer(new_tle);
 }
 
+void
+wakeup_callback(u32 val)
+{
+  printk(&state, "wakeup callback!\n");
+  wakeup_flag = val;
+}
+
+
+void
+sleep(i32 ms)
+{
+  new_timer(ms * 1000, wakeup_callback, 1);
+
+  while (wakeup_flag == 0)
+  {
+    for (i32 i = 0; i < 100; i++)
+    {
+      __asm__ __volatile__ ("NOP");
+    }
+  }
+  wakeup_flag = 0;
+}

@@ -5,10 +5,23 @@ outb:
   out dx, al
   ret
 
+global outl
+outl:
+  mov eax, [esp + 8]
+  mov dx,  [esp + 4]
+  out dx, eax
+  ret
+
 global inb 
 inb:
-  mov edx, [esp + 4]
+  mov dx, [esp + 4]
   in  al,  dx
+  ret
+
+global inl
+inl:
+  mov dx, [esp + 4]
+  in  eax, dx
   ret
 
 ;sets gdt register and flushes us into the new code segment.

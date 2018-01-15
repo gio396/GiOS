@@ -9,28 +9,34 @@
 #define FB_DATA_PROT    0x3D5
 
   
-int32 
-outb(uint16 port, uint16 data);
+u32 
+outb(u16 port, u16 data);
 
-int32 
-inb(uint16 port);
+u32
+outl(u16 port, u32 data);
 
-int32 
+u32 
+inb(u16 port);
+
+u32
+inl(u16 port);
+
+u32 
 halt();
 
 void
 nop(void);
 
-int32 
-idt_load(uint32 idt_ptr);
+i32 
+idt_load(u32 idt_ptr);
 
-int32 
-gdt_flush(uint32 gdt_ptr);
+i32 
+gdt_flush(u32 gdt_ptr);
 
 void 
 init_serial();
 
 void 
-write_serial(uint8 a);
+write_serial(u8 a);
 
 #endif

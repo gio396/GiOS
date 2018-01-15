@@ -52,7 +52,7 @@ unsigned char kbdlt[128] =
 internal void
 keyboard_handler(/*const union biosregs *ireg*/)
 {
-  uint8 scancode;
+  u8 scancode;
 
   scancode = inb(0x60);
 
@@ -75,8 +75,8 @@ keyboard_handler(/*const union biosregs *ireg*/)
         break;
       }
       case 69:
-      {
         terminal_move(&state, TERM_DIRECTION_UP);
+      {
         break;
       }
       case 70:
@@ -106,7 +106,7 @@ keyboard_handler(/*const union biosregs *ireg*/)
 }
 
 void
-keyboard_install(uint16 refresh_rate)
+keyboard_install(u16 refresh_rate)
 {
   (void)(refresh_rate);
   irq_set_handler(1, keyboard_handler);

@@ -9,9 +9,9 @@
 #include <assert.h>
 #include <string.h>
 
-extern const uint32 l_ekernel;
-uint32 *page_directory_entry;
-uint32 *first_page_table;
+extern const u32 l_ekernel;
+u32 *page_directory_entry;
+u32 *first_page_table;
 
 //single table directory entry
 //    31         11    9  8  7  6  5  4  3  2  1  0
@@ -84,18 +84,18 @@ free_range(void *begin, void *end)
   assert1(ALIGNED(begin, kb(4)));
   assert1(ALIGNED(begin, kb(4)));
 
-  uint8* p = (uint8*)(begin);
+  u8* p = (u8*)(begin);
 
-  for(; p <= (uint8*)end; p+=PGSIZE) 
+  for(; p <= (u8*)end; p+=PGSIZE) 
     kfree(p);
 }
 
 void
 page_init()
 {
-  uint32 addr = ((((uint32)(&l_ekernel)) + 4096) & 0xFFFFF000);
-  page_directory_entry = (uint32*)(addr);
-  first_page_table = (uint32*)(addr) + 1024;
+  u32 addr = ((((u32)(&l_ekernel)) + 4096) & 0xFFFFF000);
+  page_directory_entry = (u32*)(addr);
+  first_page_table = (u32*)(addr) + 1024;
 
   printk(&state, "Page directory entries addr: 0x%8X\n", page_directory_entry);
   printk(&state, "First page table addr:       0x%8X\n", first_page_table);
@@ -103,7 +103,7 @@ page_init()
   memset(page_directory_entry, 0, kb(4));
 
   //empty out all pages
-  for (uint32 p = 0; p < (int32)(KERNEL_VIRTUAL_BASE >> 22); p++)
+  for (u32 p = 0; p < (i32)(KERNEL_VIRTUAL_BASE >> 22); p++)
   {
     page_directory_entry[p] = EMPTY_PRESENT(VIRT2PHYS(first_page_table) + p * 0x1000);
   }
@@ -115,13 +115,13 @@ page_init()
   page_directory_entry[KERNEL_VIRTUAL_BASE >> 22] = SY4MB_PAGE;
   page_directory_entry[(KERNEL_VIRTUAL_BASE >> 22) + 1] = (SEG_ADR(0x400000) | SY4MB_PAGE);
 
-  enable_paging((uint32)page_directory_entry - KERNEL_VIRTUAL_BASE);
+  enable_paging((u32)page_directory_entry - KERNEL_VIRTUAL_BASE);
 
   memset(first_page_table, 0, mb(4));
 
-  for (uint32 p = 0; p < (int32)(KERNEL_VIRTUAL_BASE >> 22); p++)
+  for (u32 p = 0; p < (i32)(KERNEL_VIRTUAL_BASE >> 22); p++)
   {
-    for(uint32 j = 0; j < 1024; j++)
+    for(u32 j = 0; j < 1024; j++)
     {
       first_page_table[p * 0x400 + j] = EMPTY_PRESENT((p) * 0x400000 + 0x1000 * j);
     }
@@ -165,7 +165,7 @@ void
 kfree(void* v)
 {
   assert1(v);
-  assert1(ALIGNED((uint32)v, kb(4)));
+  assert1(ALIGNED((u32)v, kb(4)));
 
   struct free_page_list *head;
 

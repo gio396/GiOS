@@ -8,7 +8,7 @@
 
 #define CONTAINER_OF(ptr, type, mbr) ({\
     const typeof( ((type *)0)->mbr ) *__mptr = (ptr);\
-    (type *)( (int8 *)__mptr - OFFSET_OF(type,mbr) );})
+    (type *)( (i8 *)__mptr - OFFSET_OF(type,mbr) );})
 
 #define FOR_EACH_LIST(it, head)\
     for(it = head; it != NULL; it = it->next)
@@ -45,5 +45,11 @@ dlist_insert_head(struct dlist_root *head, struct dlist_node *new_head);
 
 struct dlist_node*
 dlist_get_tail(struct dlist_node *from);
+
+void
+dlist_insert(struct dlist_node *prev, struct dlist_node *new);
+
+void
+dlist_insert_tail(struct dlist_root *root, struct dlist_node *new);
 
 #endif

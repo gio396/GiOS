@@ -4,22 +4,22 @@
 #include <common.h>
 #include <list.h>
 
-#define COLOR_BLACK          (int8)(0)
-#define COLOR_BLUE           (int8)(1)
-#define COLOR_GREEN          (int8)(2)
-#define COLOR_CYAN           (int8)(3)
-#define COLOR_RED            (int8)(4)
-#define COLOR_MAGENTA        (int8)(5)
-#define COLOR_BROWN          (int8)(6)
-#define COLOR_LIGHT_GREY     (int8)(7)
-#define COLOR_DARK_GREY      (int8)(8)
-#define COLOR_LIGHT_BLUE     (int8)(9)
-#define COLOR_LIGHT_GREEN    (int8)(10)
-#define COLOR_LIGHT_CYAN     (int8)(11)
-#define COLOR_LIGHT_RED      (int8)(12)
-#define COLOR_LIGHT_MAGENTA  (int8)(13)
-#define COLOR_LIGHT_BROWN    (int8)(14)
-#define COLOR_LIGHT_WHITE    (int8)(15)
+#define COLOR_BLACK          (i8)(0)
+#define COLOR_BLUE           (i8)(1)
+#define COLOR_GREEN          (i8)(2)
+#define COLOR_CYAN           (i8)(3)
+#define COLOR_RED            (i8)(4)
+#define COLOR_MAGENTA        (i8)(5)
+#define COLOR_BROWN          (i8)(6)
+#define COLOR_LIGHT_GREY     (i8)(7)
+#define COLOR_DARK_GREY      (i8)(8)
+#define COLOR_LIGHT_BLUE     (i8)(9)
+#define COLOR_LIGHT_GREEN    (i8)(10)
+#define COLOR_LIGHT_CYAN     (i8)(11)
+#define COLOR_LIGHT_RED      (i8)(12)
+#define COLOR_LIGHT_MAGENTA  (i8)(13)
+#define COLOR_LIGHT_BROWN    (i8)(14)
+#define COLOR_LIGHT_WHITE    (i8)(15)
 
 #define VGA_WIDTH        80
 #define VGA_HEIGHT       25
@@ -47,33 +47,35 @@
 
 struct terminal_back_list
 {
-  uint16 left;
-  uint16 buffer[VGA_LENGTH];
+  i16 left;
+  i16 buffer[VGA_LENGTH];
 
   struct dlist_node node;
 };
 
 struct terminal_state 
 {
-  int32   terminal_row;
-  int32   terminal_column;
-  uint8   terminal_color;
-  uint8   terminal_flags;
-  uint16* terminal_buffer;
+  i32   terminal_row;
+  i32   terminal_column;
+  u8   terminal_color;
+  u8   terminal_flags;
+  i16* terminal_buffer;
 
-  uint8   terminal_current_length; 
+  u8   terminal_current_length; 
   struct dlist_root cur;
   struct dlist_root head;
+
+  i32 output_to_serial;
 };
 
 void 
-terminal_put_char(struct terminal_state *state, const int8 c);
+terminal_put_char(struct terminal_state *state, const i8 c);
 
 void 
 terminal_init(struct terminal_state *state);
 
 void 
-terminal_put_string(struct terminal_state *state, const int8 *s);
+terminal_put_string(struct terminal_state *state, const i8 *s);
 
 void
 terminal_load_prev();
@@ -82,10 +84,10 @@ void
 terminal_load_next();
 
 void
-terminal_move(struct terminal_state *state, int32 direction);
+terminal_move(struct terminal_state *state, i32 direction);
 
 void
-printk(struct terminal_state *state, const int8 *format, ...);
+printk(struct terminal_state *state, const i8 *format, ...);
 
 extern struct terminal_state state;
 

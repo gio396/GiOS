@@ -6,8 +6,8 @@
 //
 
 //here temporarly
-// int32
-// syscall(int32 number, ...)
+// i32
+// syscall(i32 number, ...)
 // {
 //   va_list args;
 //   va_start(args, number);

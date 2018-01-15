@@ -1,19 +1,19 @@
 #include "string.h"
 
-uint32
-strlen(const int8* string)
+u32
+strlen(const i8* string)
 {
-  uint32 res = 0;
+  u32 res = 0;
 
   while(string[res++] != '\0');
 
   return(res - 1);
 }
 
-int8* 
-itoa(int32 value, int8 *str, uint32 base)
+i8* 
+itoa(i32 value, i8 *str, u32 base)
 {
-  int8 *ptr;
+  i8 *ptr;
 
   if ( base < 2 || base > 36 )
   {
@@ -32,12 +32,12 @@ itoa(int32 value, int8 *str, uint32 base)
   return uitoa(value, ptr, base);;
 }
 
-int8* 
-uitoa(uint32 value, int8 *str, uint32 base)
+i8* 
+uitoa(u32 value, i8 *str, u32 base)
 {
-  int8 *rc;
-  int8 *ptr;
-  int8 *low;
+  i8 *rc;
+  i8 *ptr;
+  i8 *low;
 
   rc = ptr = str;
   low = ptr;
@@ -52,7 +52,7 @@ uitoa(uint32 value, int8 *str, uint32 base)
 
   while ( low < ptr )
   {
-      int8 tmp = *low;
+      i8 tmp = *low;
       *low++ = *ptr;
       *ptr-- = tmp;
   }
@@ -61,10 +61,10 @@ uitoa(uint32 value, int8 *str, uint32 base)
 }
 
 
-int8*
-to_upper(int8 *str)
+i8*
+to_upper(i8 *str)
 {
-  int8 *rc = str;
+  i8 *rc = str;
 
   while(*str != '\0')
   {
@@ -79,11 +79,11 @@ to_upper(int8 *str)
   return rc;
 }
 
-internal int32
-get_value_2_(const int8 *str)
+internal i32
+get_value_2_(const i8 *str)
 {
-  int32 res = 0;
-  int8* c = (int8*)(str);
+  i32 res = 0;
+  i8* c = (i8*)(str);
 
   while (*c == '0' || *c == '1')
   {
@@ -95,11 +95,11 @@ get_value_2_(const int8 *str)
   return res;
 }
 
-internal int32 
-get_value_10_(const int8 *str)
+internal i32 
+get_value_10_(const i8 *str)
 {
-  int32 res = 0;
-  int8* c = (int8*)(str);
+  i32 res = 0;
+  i8* c = (i8*)(str);
 
   while(*c >= '0' && *c <= '9')
   {
@@ -114,15 +114,15 @@ get_value_10_(const int8 *str)
   return res;
 }
 
-internal int32
-get_value_16_(const int8 *str)
+internal i32
+get_value_16_(const i8 *str)
 {
-  int32 res = 0;
-  int8* c = (int8*)(str);
+  i32 res = 0;
+  i8* c = (i8*)(str);
 
   while (*c)
   {
-    int32 inc;
+    i32 inc;
 
     if (*c >= '0' && *c <= '9')
     {
@@ -150,11 +150,11 @@ get_value_16_(const int8 *str)
   return res;
 }
 
-internal int32
-get_base_(const int8* str)
+internal i32
+get_base_(const i8* str)
 {
-  int8 *c = (int8*)(str);
-  int32 res;
+  i8 *c = (i8*)(str);
+  i32 res;
 
   if (*c == '0')
   {
@@ -188,16 +188,16 @@ get_base_(const int8* str)
   return res;
 }
 
-int32
-atoi(const int8 *str)
+i32
+atoi(const i8 *str)
 {
-  int32 res = 0;
-  int8 *c = (int8*)str;
+  i32 res = 0;
+  i8 *c = (i8*)str;
   b8 neg = 0;
 
   while((*c == ' ' || *c == '\t') && c++);
 
-  int32 base = get_base_(c);
+  i32 base = get_base_(c);
 
   if (base == -10)
   {
@@ -241,10 +241,10 @@ atoi(const int8 *str)
 }
 
 b32
-strncmp(const int8 *str1, const int8 *str2, size_t num)
+strncmp(const i8 *str1, const i8 *str2, size_t num)
 {
-  int8 *a = (int8*)str1;
-  int8 *b = (int8*)str2;
+  i8 *a = (i8*)str1;
+  i8 *b = (i8*)str2;
   
   while((*a == *b) && --num)
   {
@@ -256,9 +256,9 @@ strncmp(const int8 *str1, const int8 *str2, size_t num)
 }
 
 void*
-memset(void *s, int32 c, size_t n)
+memset(void *s, i32 c, size_t n)
 {
-  uint8* p = (uint8*)s;
+  u8* p = (u8*)s;
 
   while(n--)
   {
@@ -271,8 +271,8 @@ memset(void *s, int32 c, size_t n)
 void*
 memcpy(const void *s, void *d, size_t n)
 {
-  const uint8* sp = (uint8*)s;
-  uint8* dp = (uint8*)d;
+  const u8* sp = (u8*)s;
+  u8* dp = (u8*)d;
 
   while (n--)
   {

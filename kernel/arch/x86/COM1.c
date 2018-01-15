@@ -22,7 +22,7 @@ is_transmit_empty()
 }
  
 void 
-write_serial(uint8 a) 
+write_serial(u8 a) 
 {
    while (is_transmit_empty() == 0);
  

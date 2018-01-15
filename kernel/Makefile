@@ -1,5 +1,3 @@
-CINCLUDES=-I ./ -I ../libc/
-
 SUBDIRS="arch/x86"
 SUBDIRSCLEAN=$(addsuffix .clean, $(SUBDIRS))
 SUBDIRSBUILD=$(addsuffix .build, $(SUBDIRS))
@@ -14,7 +12,7 @@ $(SUBDIRSBUILD):
 	$(MAKE) -C $(basename $@) BUILD_ROOT="$(BUILD_ROOT)"
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(CINCLUDES)  $< -o $@
+	$(CC) $(CFLAGS) $(CINCLUDES) $(DEFINES)  $< -o $@
 
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@

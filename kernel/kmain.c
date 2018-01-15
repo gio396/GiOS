@@ -11,6 +11,7 @@
 #include <arch/x86/apic.h>
 #include <arch/x86/acpi.h>
 #include <arch/x86/pit.h>
+#include <arch/x86/pci.h>
 
 
 #include <timer.h>
@@ -23,46 +24,34 @@
 #include <macros.h>
 
 
-extern const uint32 l_srodata;
-extern const uint32 l_erodata;
-extern const uint32 l_sdata;
-extern const uint32 l_edata;
-extern const uint32 l_sbss;
-extern const uint32 l_ebss;
-extern const uint32 l_ekernel;
+extern const u32 l_srodata;
+extern const u32 l_erodata;
+extern const u32 l_sdata;
+extern const u32 l_edata;
+extern const u32 l_sbss;
+extern const u32 l_ebss;
+extern const u32 l_ekernel;
 
 void
-timer_callback(uint32 val)
+timer_callback(u32 val)
 {
   printk(&state, "tick %d\n", val);
 }
 
-void
-everySecond()
-{
-  static uint32 count = 0;
-  count++;
-
-  printk(&state, "asd");
-  if ((count % 100000) == 0)
-  {
-    printk(&state, "tick\n");
-  }
-}
-
 void 
-kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
+kmain(u32 mboot_magic, struct multiboot_info *mboot_info)
 {
   (void)(mboot_info);
-  uint8 mask1, mask2;
-  uint32 eax, ebx, edx, ecx;
-
-  // #ifdef QEMU_DBG
-  init_serial();
-  // #endif
+  u8 mask1, mask2;
+  u32 eax, ebx, edx, ecx;
 
   terminal_init(&state);
   printk(&state, "Init done\n");
+
+  #ifdef __GIOS_DEBUG__
+  init_serial();
+  state.output_to_serial = 1;
+  #endif
 
   //check boot magic number.
   if (mboot_magic != MULTIBOOT_BOOTLOADER_MAGIC)
@@ -76,14 +65,17 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   gdt_install();
   idt_install();
   find_rsdp();
-  cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
 
+  printk(&state, "Initializing pit.\n");
   pit_init();
 
+  printk(&state, "Initializing irq.\n");
   irq_install();
 
+  cpuid(CPUID_GET_FEATURES, &eax, &ebx, &ecx, &edx);
   if((edx & CPUID_FEAT_EDX_APIC))
   {
+    printk(&state, "Enabling apic at 0x%08X\n", APIC_LOCATION);
     apic_enable(APIC_LOCATION);
 
     //Save previous masks
@@ -112,11 +104,11 @@ kmain(uint32 mboot_magic, struct multiboot_info *mboot_info)
   printk(&state, "end of kernel  0x%8X\n", &l_ekernel);
   printk(&state, "\n");
 
-  int8 buffer[17];
+  i8 buffer[17];
   buffer[16] = '\0';
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
 
-  printk(&state, "%d\n", atoi("-12"));
+  pci_init_enum();
 }

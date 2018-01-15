@@ -7,19 +7,19 @@
 
 struct idt_ptr
 {
-  uint16 limit;
-  uint32 base;
+  i16 limit;
+  u32 base;
 } att_packed;
 
 struct idt_entry
 {
-  uint16 base_low;
-  uint16 sel; // kernel segment
+  i16 base_low;
+  i16 sel; // kernel segment
 
-  uint8 zero; //0
+  u8 zero; //0
 
-  uint8 flags;
-  uint16 base_high;
+  u8 flags;
+  i16 base_high;
 } att_packed;
 
 

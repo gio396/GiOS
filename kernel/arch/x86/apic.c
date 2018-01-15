@@ -53,48 +53,48 @@
 #define APIC_TIMER_DEST_VEC 48
 #define APIC_TARGET_FREQUENCY 1000000
 
-global int32 apic_freq = 0;
-global int32 apic_tick_count = 0;
+global i32 apic_freq = 0;
+global i32 apic_tick_count = 1;
 
 global struct 
 {
-  uint8 ioapic_id;
-  uint32 ioapic_addr;
+  u8 ioapic_id;
+  u32 ioapic_addr;
 } ioapic;
 
 void
-apic_write_reg(uint32 reg, uint32 val)
+apic_write_reg(u32 reg, u32 val)
 {
-  uint32 offset = reg;
-  uint32 volatile *reg_addr = (uint32*)(APIC_LOCATION + offset);
+  u32 offset = reg;
+  u32 volatile *reg_addr = (u32*)(APIC_LOCATION + offset);
 
   reg_addr[0] = val;
 }
 
-uint32
-apic_read_reg(uint32 reg)
+u32
+apic_read_reg(u32 reg)
 {
-  uint32 offset = reg;
-  uint32 *reg_addr = (uint32*)(APIC_LOCATION + offset);
+  u32 offset = reg;
+  u32 *reg_addr = (u32*)(APIC_LOCATION + offset);
 
   return(*reg_addr);
 }
 
 void 
-ioapic_write_reg(uint8 offset, uint32 val)
+ioapic_write_reg(u8 offset, u32 val)
 {
-  uint8 *ioapic_base_cmd = (uint8*)(ioapic.ioapic_addr);
-  uint32 *ioapic_base_data = (uint32*)(ioapic.ioapic_addr + 0x10);
+  u8 *ioapic_base_cmd = (u8*)(ioapic.ioapic_addr);
+  u32 *ioapic_base_data = (u32*)(ioapic.ioapic_addr + 0x10);
 
   ioapic_base_cmd[0] = offset;
   ioapic_base_data[0] = val;
 }
 
 void 
-ioapic_read_reg(uint8 offset, uint32 * val)
+ioapic_read_reg(u8 offset, u32* val)
 {
-  uint8 *ioapic_base_cmd = (uint8*)(ioapic.ioapic_addr);
-  uint32 *ioapic_base_data = (uint32*)(ioapic.ioapic_addr + 0x10);
+  u8 *ioapic_base_cmd = (u8*)(ioapic.ioapic_addr);
+  u32 *ioapic_base_data = (u32*)(ioapic.ioapic_addr + 0x10);
 
   ioapic_base_cmd[0] = offset;
   *val = ioapic_base_data[0];
@@ -103,15 +103,15 @@ ioapic_read_reg(uint8 offset, uint32 * val)
 void  
 apic_init_timer(void)
 {
-  const int32 pit_end_count = 10000;
-  const int32 pit_initial_count = 60000;
-  const uint32 apic_initial_count = 100000000;
-  const uint32 masked_apic_16 = IOAPIC_SEG_INT_VEC(APIC_TIMER_DEST_VEC) | IOAPIC_SEG_INT_MAS(1) | APIC_TIMER_PERIODIC;
-  const uint32 unmasked_oneshot = IOAPIC_SEG_INT_VEC(APIC_TIMER_DEST_VEC) | IOAPIC_SEG_INT_MAS(0) | APIC_TIMER_ONESHOT;
+  const i32 pit_end_count = 10000;
+  const i32 pit_initial_count = 60000;
+  const u32 apic_initial_count = 100000000;
+  const u32 masked_apic_16 = IOAPIC_SEG_INT_VEC(APIC_TIMER_DEST_VEC) | IOAPIC_SEG_INT_MAS(1) | APIC_TIMER_PERIODIC;
+  const u32 unmasked_oneshot = IOAPIC_SEG_INT_VEC(APIC_TIMER_DEST_VEC) | IOAPIC_SEG_INT_MAS(0) | APIC_TIMER_ONESHOT;
 
-  uint32 apic_test_count;
+  u32 apic_test_count;
 
-  apic_write_reg(APIC_DIVIDE_CONFIGURATION_REGISTER, APIC_DIVIDE16);;
+  apic_write_reg(APIC_DIVIDE_CONFIGURATION_REGISTER, APIC_DIVIDE16);
   apic_write_reg(APIC_INITIAL_COUNT_REGISTER, apic_initial_count);
 
   apic_write_reg(APIC_LVT_TIMER_REGISTER, masked_apic_16);
@@ -120,13 +120,12 @@ apic_init_timer(void)
 
   apic_write_reg(APIC_LVT_TIMER_REGISTER, masked_apic_16 ^ IOAPIC_SEG_INT_MAS(1));
 
-  volatile int32 cnt = 0;
+  volatile i32 cnt = 0;
   do
   {
 
     //nop to let pit count
     //when running in virtual machine;
-
     for (int i = 0; i < 100; i++)
     {
       __asm__ __volatile__ ("NOP");
@@ -147,7 +146,7 @@ apic_init_timer(void)
   printk(&state, "APIC freq ~ %d\n", apic_freq);
 
   // ticks per 1us
-  apic_tick_count = apic_freq / APIC_TARGET_FREQUENCY;
+  apic_tick_count = (apic_freq + APIC_TARGET_FREQUENCY - 1) / (APIC_TARGET_FREQUENCY);
 
   printk(&state, "Target Frequency %d\n", apic_tick_count);
 
@@ -158,24 +157,24 @@ apic_init_timer(void)
 }
 
 void
-apic_timer_interrupt_in(uint32 us)
+apic_timer_interrupt_in(u32 us)
 {
   disable_interrupts();
 
-  uint32 count = (us * apic_tick_count);
+  u32 count = (us * apic_tick_count);
 
   apic_write_reg(APIC_INITIAL_COUNT_REGISTER, count);
 
   enable_interrupts();
 }
 
-uint32
+u32
 apic_timer_get_count(void)
 {
   return apic_read_reg(APIC_CURRENT_COUNT_REGISTER); 
 }
 
-uint32
+u32
 apic_timer_get_tick_count(void)
 {
   return (apic_timer_get_count() / apic_tick_count);
@@ -183,17 +182,20 @@ apic_timer_get_tick_count(void)
 
 
 void
-apic_enable(uint32 apic_base_address)
+apic_enable(u32 apic_base_address)
 {
-  uint32 apic_base_register_lo;
-  uint32 apic_base_register_hi;
-  uint32 apic_id; 
+  u32 apic_base_register_lo;
+  u32 apic_base_register_hi;
+  u32 apic_id; 
 
   apic_base_register_lo = (apic_base_address & 0xFFFFF000) | IA32_APIC_BASE_MSR_ENABLE;
   apic_base_register_hi = 0;
 
-  cpu_set_msr(IA32_APIC_BASE_MSR, apic_base_register_hi, apic_base_register_lo);
+  (void)(apic_base_register_lo);
+  (void)(apic_base_register_hi);
 
+  //TODO(gio): This call causes GPE when running with kvm enabled.
+  // cpu_set_msr(IA32_APIC_BASE_MSR, apic_base_register_hi, apic_base_register_lo);
 
   apic_write_reg(APIC_DESTINATION_FORMAT_REGISTER, 0xFFFFFFFF);
   apic_write_reg(APIC_LOGICAL_DESTINATION_REGISTER, 0x10000000);
@@ -208,7 +210,7 @@ apic_enable(uint32 apic_base_address)
 
   parse_madt_table();
 
-  uint32 version;
+  u32 version;
   ioapic_read_reg(IOAPIC_REG_VERSION, &version);
   printk(&state, "IOAPIC Version = 0x%08X\n", version);
 
@@ -228,9 +230,9 @@ parse_madt_table(void)
   printk(&state, "descriptor = %08X\n", descriptor);
 
   struct madt *madt = (struct madt*)(descriptor);
-  void *madt_end = (int8*)madt + madt->header.length;
+  void *madt_end = (i8*)madt + madt->header.length;
   
-  for (union madt_entry *cur = &madt->first_entry; (void*)cur  < madt_end;)
+  for (union madt_entry *cur = &madt->first_entry; (void*)cur < madt_end;)
   {
     switch(cur->ent0.header.entry_type)
     {
@@ -284,7 +286,7 @@ parse_madt_table(void)
     }
 
 
-    cur = (union madt_entry*)((int8*)cur + cur->ent0.header.entry_length);
+    cur = (union madt_entry*)((i8*)cur + cur->ent0.header.entry_length);
   }
 }
 

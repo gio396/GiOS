@@ -54,13 +54,13 @@
 #define APIC_DIVIDE_CONFIGURATION_REGISTER               0x3E0 //R W
 
 void
-apic_enable(uint32 apic_base_address);
+apic_enable(u32 apic_base_address);
 
 void
-apic_write_reg(uint32 reg, uint32 val);
+apic_write_reg(u32 reg, u32 val);
 
-uint32
-apic_read_reg(uint32 reg);
+u32
+apic_read_reg(u32 reg);
 
 void
 parse_madt_table(void);
@@ -69,9 +69,9 @@ void
 apic_init_timer(void);
 
 void
-apic_timer_interrupt_in(uint32 us);
+apic_timer_interrupt_in(u32 us);
 
-uint32
+u32
 apic_timer_get_tick_count(void);
 
 #endif

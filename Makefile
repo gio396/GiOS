@@ -1,10 +1,16 @@
 CC=gcc
 GDB=gdb
 
-CFLAGS= -m32 -O0 -ggdb -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding 
-CINCLUDES=-I kernel/  -I libc/
+CFLAGS= -m32 -O0 -ggdb -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding
+BASEDIR=$(shell pwd)
+CINCLUDES=-I $(BASEDIR)/kernel/  -I $(BASEDIR)/libc/
+DEFINES=-D__GIOS_DEBUG__
 
 LDFLAGS=-T link.ld -melf_i386 
+
+export CFLAGS
+export CINCLUDES
+export DEFINES
 
 export CFLAGS
 export CC
@@ -44,7 +50,7 @@ os.iso: kernel.elf
 	# 						-o os.iso                       \
 	# 						iso
 
-QEMU_COMMON_FLAGS=-m 256 -cpu core2duo -smp 1 #-enable-kvm
+QEMU_COMMON_FLAGS=-m 256 -cpu core2duo -smp 1 -drive file=image_file,format=raw -device virtio-serial,id=nxtoolsBus0 -device virtserialport,chardev=nxtoolsChardev0,name=nxtools0,id=nxtoolsGuest0 -chardev socket,path=/tmp/nxsock1233,server,nowait,id=nxtoolsChardev0
 
 run: clean dir os.iso
 		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -serial stdio
@@ -66,7 +72,7 @@ $(SUBDIRSBUILD):
 	$(MAKE) -C $(basename $@) BUILD_ROOT="$(BUILD_ROOT)"
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(CINCLUDES)  $< -o $@
+	$(CC) $(CFLAGS) $(CINCLUDES) $(DEFINES)  $< -o $@
 
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@

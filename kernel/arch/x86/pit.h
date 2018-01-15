@@ -15,7 +15,7 @@ pit_system_timer_init();
 void
 pit_interrupt_in(size_t time);
 
-uint16
+u16
 pit_get_current_count(void);
 
 #endif

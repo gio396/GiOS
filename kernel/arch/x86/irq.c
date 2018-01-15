@@ -29,9 +29,6 @@
 
 typedef void(*PROCIRQHandler)(const union biosregs *reg);
 
-internal void 
-sti_enable() { __asm__ __volatile__ ("sti"); }
-
 global void *irq_handlers[] = 
 {
   0, 0, 0, 0, 0, 0, 0, 0, 
@@ -42,14 +39,14 @@ global void *irq_handlers[] =
 
 //can have only one handler;
 void 
-irq_set_handler(uint8 num, void *handler)
+irq_set_handler(u8 num, void *handler)
 {
   irq_handlers[num] = handler;
 }
 
 //same as calling irq_set_handler(num, 0);
 void
-irq_clear_handler(uint8 num)
+irq_clear_handler(u8 num)
 {
   irq_handlers[num] = 0;
 }
@@ -57,7 +54,7 @@ irq_clear_handler(uint8 num)
 void
 irq_common_handler(const union biosregs *reg)
 {
-  uint32 irq_handler_index = reg->int_no - 32;
+  u32 irq_handler_index = reg->int_no - 32;
   PROCIRQHandler irq_handler = (PROCIRQHandler)irq_handlers[irq_handler_index];
 
   if(irq_handler)
@@ -84,9 +81,9 @@ irq_common_handler(const union biosregs *reg)
 //remap irq 0 - 8  to [offset1,offset1 + 8)
 //remap irq 8 - 16 to [offset2,offset2 + 8)
 internal void
-irq_remap(uint32 offset1, uint32 offset2)
+irq_remap(u32 offset1, u32 offset2)
 {
-  uint8 m1, m2;
+  u8 m1, m2;
 
   //save masks.
   m1 = inb(PIC1_DAT);
@@ -120,18 +117,18 @@ irq_install(void)
   set_irq_gates();
 
   printk(&state, "Enabling interupts\n");
-  sti_enable();
+  enable_interrupts();
 }
 
 void
-get_interrupt_masks(uint8 *mask1, uint8 *mask2)
+get_interrupt_masks(u8 *mask1, u8 *mask2)
 {
   *mask1 = inb(PIC1_DAT);
   *mask2 = inb(PIC2_DAT);
 }
 
 void
-set_interrupt_masks(uint8 mask1, uint8 mask2)
+set_interrupt_masks(u8 mask1, u8 mask2)
 {
   outb(PIC1_DAT, mask1);
   outb(PIC2_DAT, mask2);

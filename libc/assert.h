@@ -3,7 +3,7 @@
 
 #include <common.h>
 
-#define assert_break *(uint32*)(0) = 0
+#define assert_break *(u32*)(0) = 0
 
 #define assert1(cond) !(cond) ? assert_break:(void)(0)
 

@@ -77,13 +77,13 @@ extern void irqTime(void);
 #define SEG_32_TRAP_GATE 0x0F
 
 
-#define IDT_INTR_PL0 (uint8)(SEG_PRES(1) | SEG_PRIV(0) | SEG_SGAT(0) | \
+#define IDT_INTR_PL0 (u8)(SEG_PRES(1) | SEG_PRIV(0) | SEG_SGAT(0) | \
                              SEG_32_INTR_GATE)
 
 //      8  7      5  4        0
 //flags [p-|DPL---|S-|TYPE----]
 void 
-idt_set_gate(int32 num, uint32 base, uint16 sel, uint8 flags)
+idt_set_gate(i32 num, u32 base, i16 sel, u8 flags)
 {
   printk(&state, "Setting idt gate: %02d, Base 0x%08X, Segment 0x%02X, Flags %08b\n",
          num, base, sel, flags);

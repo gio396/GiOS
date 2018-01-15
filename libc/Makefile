@@ -1,6 +1,3 @@
-CINCLUDES= -I ./
-
-SUBDIRS=
 OBJS= \
 	string.o list.o
 
@@ -11,7 +8,7 @@ $(SUBDIRS):
 	$(MAKE) -C $@ BUILD_ROOT="$(BUILD_ROOT)"
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(CINCLUDES)  $< -o $@
+	$(CC) $(CFLAGS) $(CINCLUDES) $(DEFINES)  $< -o $@
 
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@

@@ -4,14 +4,14 @@
 #include <common.h>
 #include <list.h>
 
-typedef void(*timer_function_proc)(uint32);
+typedef void(*timer_function_proc)(u32);
 
 //timer queue in nanoseconds
 struct timer_list_entry
 {
-  uint32 timer;
+  u32 timer;
   timer_function_proc function_callback;
-  uint32 callback_arg;
+  u32 callback_arg;
 
   struct slist_node node;
 };
@@ -20,6 +20,9 @@ void
 timer_init();
 
 void
-new_timer(uint32 time, timer_function_proc function, uint32 callback_arg);
+new_timer(u32 time, timer_function_proc function, u32 callback_arg);
+
+void
+sleep(i32 ms);
 
 #endif
