@@ -50,7 +50,10 @@ os.iso: kernel.elf
 	# 						-o os.iso                       \
 	# 						iso
 
-QEMU_COMMON_FLAGS=-m 256 -cpu core2duo -smp 1 -drive file=image_file,format=raw -device virtio-serial,id=nxtoolsBus0 -device virtserialport,chardev=nxtoolsChardev0,name=nxtools0,id=nxtoolsGuest0 -chardev socket,path=/tmp/nxsock1233,server,nowait,id=nxtoolsChardev0
+QEMU_COMMON_FLAGS=-m 256 -cpu core2duo -smp 1 -drive file=image_file.raw,if=virtio -device virtio-serial,id=nxtoolsBus0 -device virtserialport,chardev=nxtoolsChardev0,name=nxtools0,id=nxtoolsGuest0 -chardev socket,path=/tmp/nxsock1233,server,nowait,id=nxtoolsChardev0 
+
+#FOR AHCI device use this!
+#-drive id=disk,file=image_file.raw,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0
 
 run: clean dir os.iso
 		qemu-system-x86_64 -boot d -kernel kernel.elf $(QEMU_COMMON_FLAGS) -serial stdio
