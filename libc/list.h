@@ -13,6 +13,9 @@
 #define FOR_EACH_LIST(it, head)\
     for(it = head; it != NULL; it = it->next)
 
+#define FOR_EACH_LIST_C(it)\
+    for(it = it -> next; it != NULL; it = it -> next)
+
 struct slist_node
 {
   struct slist_node *next;

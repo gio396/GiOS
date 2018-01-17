@@ -13,6 +13,8 @@
 #include <arch/x86/pit.h>
 #include <arch/x86/pci.h>
 
+#include <drivers/virtio/virtio.h>
+
 
 #include <timer.h>
 #include <time.h>
@@ -111,4 +113,6 @@ kmain(u32 mboot_magic, struct multiboot_info *mboot_info)
   printk(&state, "CPU vendor: %s\n", buffer + 4);
 
   pci_init_enum();
+
+  virtio_install();
 }

@@ -119,12 +119,12 @@
 
 #define ALIGNED(adr, val) (((size_t)(adr) & ((val) - 1)) == 0)
 
-#define BYTE(x) (x)
-#define KBYTE(x) BYTE(x) * 1024
-#define MBYTE(x) KBYTE(x) * 1024
+#define BYTE(x)  (x)
+#define KBYTE(x) (BYTE(x) * 1024)
+#define MBYTE(x) (KBYTE(x) * 1024)
 
 #define bt(x) (x) //byte
-#define kb(x) bt(x) * 1024
-#define mb(x) kb(x) * 1024
+#define kb(x) (bt(x) * 1024)
+#define mb(x) (kb(x) * 1024)
 
 #endif

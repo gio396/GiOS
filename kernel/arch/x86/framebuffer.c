@@ -626,6 +626,7 @@ printk(struct terminal_state *state, const i8 *format, ...)
           break;
         }
 
+
         case 'X':
         {
           val = va_arg(args, i32);
@@ -641,6 +642,28 @@ printk(struct terminal_state *state, const i8 *format, ...)
           }
 
           to_upper(buffer);
+          terminal_put_string(state, buffer);
+          break;
+        }
+
+        case 'P':
+        case 'p':
+        {
+          val = va_arg(args, size_t);
+          i8 buffer[12];
+          itoa(val, buffer, 16);
+
+          terminal_put_string(state, "0X");
+          if (run)
+          {
+            len = strlen(buffer);
+            while (len++ < width)
+              terminal_put_char(state, wchar);
+          }
+
+          if (nxt == 'P')
+            to_upper(buffer);
+          
           terminal_put_string(state, buffer);
           break;
         }

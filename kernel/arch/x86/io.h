@@ -15,8 +15,14 @@ outb(u16 port, u16 data);
 u32
 outl(u16 port, u32 data);
 
+u32
+outs(u16 port, u32 data);
+
 u32 
 inb(u16 port);
+
+u32
+ins(u16 port);
 
 u32
 inl(u16 port);

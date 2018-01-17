@@ -12,10 +12,23 @@ outl:
   out dx, eax
   ret
 
+global outs
+outs:
+  mov ax, [esp + 8]
+  mov dx, [esp + 4]
+  out dx, ax
+  ret
+
 global inb 
 inb:
   mov dx, [esp + 4]
   in  al,  dx
+  ret
+
+global ins 
+ins:
+  mov dx, [esp + 4]
+  in  ax,  dx
   ret
 
 global inl

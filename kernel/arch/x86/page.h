@@ -6,6 +6,10 @@
 #define NPTE   1024 //number of page table entries
 #define PGSIZE 4096 //page size
 
+#define PROT_READ (1 << 0)
+#define PROT_WRITE (1 << 1)
+#define PROT_EXEC (1 << 2)
+
 //TODO(gio): dinamically create page table entries;
 //           add ability to get phys adress maped to virtaual adress.
 //           add ability to map virtual adress to physical adress.
@@ -26,7 +30,7 @@ void *
 get_physaddr(void *virtaddr);
 
 void
-map_page(void* physaddr, void* virtaddr, u32 flags);
+mmap(void *paddr, u32 size, u8 flags);
 
 // alocates 4kb phys memory and returns adresss
 // 1 to 1 mapping

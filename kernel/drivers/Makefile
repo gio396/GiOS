@@ -1,12 +1,10 @@
-SUBDIRS="arch/x86" "drivers"
+SUBDIRS="virtio"
 SUBDIRSCLEAN=$(addsuffix .clean, $(SUBDIRS))
 SUBDIRSBUILD=$(addsuffix .build, $(SUBDIRS))
 
 OBJS= \
-	 time.o timer.o keyboard.o kmain.o __start.o
 
 all: $(SUBDIRSBUILD) $(OBJS)
-	cp *.o $(BUILD_ROOT)/OBJS
 
 $(SUBDIRSBUILD):
 	$(MAKE) -C $(basename $@) BUILD_ROOT="$(BUILD_ROOT)"

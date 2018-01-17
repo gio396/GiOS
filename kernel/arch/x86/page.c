@@ -54,7 +54,7 @@ u32 *first_page_table;
 #define SEG_PGS(x) ((x) << 0x07) //PDT 0
 #define SEG_DRT(x) ((x) << 0x06) //0   PTE 
 #define SEG_ACC(x) ((x) << 0x05) //PDT PTE
-#define SEG_CHD(x) ((x) << 0x04) //PDT PTE
+#define SEG_CHD(x) ((x) << 0x04) //PDT PTEmap
 #define SEG_WRT(x) ((x) << 0x03) //PDT PTE
 #define SEG_USU(x) ((x) << 0x02) //PDT PTE
 #define SEG_RDW(x) ((x) << 0x01) //PDT PTE
@@ -74,6 +74,9 @@ u32 *first_page_table;
                            SEG_USU(0) | SEG_RDW(1) | SEG_PRE(1)
 
 #define APIC_VIRTUAL_BASE  0xFEE00000
+
+#define GET_VIRT_DIRECTORY_OFFSET(p)  ((u32)p >> 22)
+#define GET_VIRT_PAGE_TABLE_OFFSET(p) ((((u32)p) << 10) >> 22)
 
 
 void 
@@ -129,11 +132,6 @@ page_init()
 
   first_page_table[0] = EMPTY_PAGE;
 
-  //make apic page preset.
-  first_page_table[((APIC_VIRTUAL_BASE) >> 22) * 1024] = SEG_ADR(APIC_VIRTUAL_BASE) | SEG_AVL(0) | SEG_IGN(0) | SEG_PGS(0) |
-                                                                         SEG_DRT(0) | SEG_ACC(0) | SEG_CHD(1) | SEG_WRT(0) |
-                                                                         SEG_USU(1) | SEG_RDW(1) | SEG_PRE(1);
-
   free_range((void*)(mb(8)), (void*)(mb(128)));
 }
 
@@ -172,4 +170,40 @@ kfree(void* v)
   head = (struct free_page_list*)(v);
   head->next = kmem.list;
   kmem.list = head;
+}
+
+void
+mmap(void *paddr, u32 size, u8 flags)
+{
+  UNUSED(flags);
+ //TODO(gio): ignoring flags for now...
+
+  // assert1(ALIGNED((size_t)paddr, kb(4)));
+  u32 page_count = (size + kb(4) - 1) / (kb(4));
+  u32 pgindex = GET_VIRT_DIRECTORY_OFFSET(paddr);
+
+  LOG("%d %d\n", pgindex, page_count);
+
+  if (page_directory_entry[pgindex] == 0)
+  {
+    void*  new_page_table = kalloc();
+    page_directory_entry[pgindex] = EMPTY_PRESENT((u32)new_page_table);
+    memset(new_page_table, 0, kb(4));
+  }
+  else if (page_directory_entry[pgindex] && (SY4MB_PAGE) == 1)
+  {
+    //already mapped!
+    return;
+  }
+
+  u32 *page_table = (u32*)(page_directory_entry[pgindex] & 0xFFFFF800);
+  u32 page_table_offset = GET_VIRT_PAGE_TABLE_OFFSET(paddr);
+
+  for (u32 i = 0; i < page_count; i++)
+  {
+    if (page_table[page_table_offset + page_count] == 0)
+    {
+      page_table[page_table_offset + i] = EMPTY_PRESENT((u32)paddr + 0x1000 * i);
+    }
+  }
 }
