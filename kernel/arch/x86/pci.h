@@ -91,7 +91,13 @@ void
 pci_init_enum();
 
 struct dlist_node*
-pci_lookup_device(struct dlist_node *it, u16 vendor_id, u16 device_id, u16 subsystem_id);
+pci_lookup_device_start();
+
+struct dlist_node*
+pci_lookup_device_next(struct dlist_node *it, u16 vendor_id);
+
+struct dlist_node*
+pci_lookup_device(struct dlist_node *it, u16 vendor_id);
 
 void
 pci_dev_read_config_byte(struct pci_dev *dev, u8 offset, u8 *res);

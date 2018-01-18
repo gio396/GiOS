@@ -15,7 +15,6 @@
 
 #include <drivers/virtio/virtio.h>
 
-
 #include <timer.h>
 #include <time.h>
 #include <keyboard.h>

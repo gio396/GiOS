@@ -342,17 +342,18 @@ pci_init_enum()
 }
 
 struct dlist_node*
-pci_lookup_device(struct dlist_node *it, u16 vendor_id, u16 device_id, u16 subsystem_id)
+pci_lookup_device_start()
 {
-  if (it == NULL)
-  {
-    it = global_bus -> devices.dlist_node;
-  }
+  return global_bus -> devices.dlist_node;
+}
 
+struct dlist_node*
+pci_lookup_device_next(struct dlist_node *it, u16 vendor_id)
+{
   FOR_EACH_LIST_C(it)
   {
     struct pci_dev *dev = CONTAINER_OF(it, struct pci_dev, self);
-    if (dev -> vendor_id == vendor_id && dev -> device_id == device_id && dev -> subsystem_id == subsystem_id)
+    if (dev -> vendor_id == vendor_id)
     {
       return it;
     }
@@ -361,6 +362,13 @@ pci_lookup_device(struct dlist_node *it, u16 vendor_id, u16 device_id, u16 subsy
   //TODO(gio): Check other busses!\n
 
   return NULL;
+}
+
+struct dlist_node*
+pci_lookup_device(struct dlist_node *it, u16 vendor_id)
+{
+  it = pci_lookup_device_start();
+  return pci_lookup_device_next(it, vendor_id);
 }
 
 void

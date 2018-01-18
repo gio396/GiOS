@@ -8,72 +8,12 @@
 #include <arch/x86/pci.h>
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/page.h>
+  
+#define VIRTIO_SUBSYSTEM_NETWORK  1
+#define VIRTIO_SUBSYSTEM_BLOCK  2
+#define VIRTIO_SUBSYSTEM_CHARDEV  3
 
-#define VIRTIO_STATUS_ACK         1
-#define VIRTIO_STATUS_DRI         2
-#define VIRTIO_STATUS_DRI_OK      3
-#define VIRTIO_STATUS_FAILED      8
-#define VIRTIO_STATUS_FEATURES_OK 
-
-#define VIRTIO_F_FEATURES_HI  
-
-#define VIRTIO_CHARDEV_F_SIZE          0
-#define VIRTIO_CHARDEV_F_MULTIPORT     1
-#define VIRTIO_CHARDEV_F_EMERG_WRITE   2
-
-#define VIRTIO_CHARDEV_DEVICE_READY    0
-#define VIRTIO_CHARDEV_DEVICE_ADD      1
-#define VIRTIO_CHARDEV_DEVICE_REMOVE   2
-#define VIRTIO_CHARDEV_PORT_READY      3
-#define VIRTIO_CHARDEV_CHARDEV_PORT    4
-#define VIRTIO_CHARDEV_RESIZE          5
-#define VIRTIO_CHARDEV_PORT_OPEN       6
-#define VIRTIO_CHARDEV_PORT_NAME       7
-
-struct virtio_cap
-{
-  u8 cap_vndr;    /* Generic PCI field: PCI_CAP_ID_VNDR */
-  u8 cap_next;    /* Generic PCI field: next ptr. */
-  u8 cap_len;     /* Generic PCI field: capability length */
-  u8 cfg_type;    /* Identifies the structure. */
-  u8 bar;
-  u8 padding[3];
-  u32 offset;    /* Offset within bar. */
-  u32 length;
-};
-
-struct virtio_header
-{
-  u32 device_features;
-  u32 guest_features;
-  u32 queue_addr;
-  u16 queue_size;
-  u16 queue_select;
-  u16 queue_notify;
-  u8  device_status;
-  u8  isr_status;
-} att_packed;
-
-struct virtio_msix_header
-{
-  u16 vector;
-  u16 queue;
-} att_packed;
-
-struct virtio_chardev_header
-{
-  u16 cols;
-  u16 rows;
-  u32 max_n_ports;
-  u32 emerg_wr;
-} att_packed;
-
-struct virtio_chardev_control
-{
-  u32 id;
-  u16 event;
-  u16 value;
-} att_packed;
+#include "virtio_console.h"
 
 #define ERINIT -1
 
@@ -155,73 +95,126 @@ virtio_get_config(u32 iobase, u32 offset, u8 *buffer, size_t size)
   }
 }
 
+// u8
+// virtio_install()
+// {
+//   struct dlist_node *it = NULL;
+//   struct pci_dev *dev;
+
+//   it = pci_lookup_device_next(it, VIRTIO_VENDOR_ID, VIRTIO_CHAR_DEVICE_ID, VIRTIO_CHAR_DEVICE_SUBSYSTEM_ID);
+
+//   if (it == NULL)
+//   {
+//     return ERINIT;
+//   }
+
+//   dev = CONTAINER_OF(it, struct pci_dev, self);
+//   LOG("Found Valid virtio device!\n");
+//   LOG("Vendort id = 0x%04x\n", dev -> vendor_id);
+//   LOG("capabilities = 0x%02x\n", dev -> capabilities);
+
+//   u32 iobase = 0;
+
+//   iobase = pci_dev_get_iobase(dev);
+
+//   virtio_add_status(iobase, VIRTIO_STATUS_ACK);
+//   virtio_add_status(iobase, VIRTIO_STATUS_DRI);
+
+//   u32 features = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
+
+//   LOG("FEATURES = %08x!\n", features);
+
+//   CHECK_F(features, VIRTIO_CHARDEV_F_SIZE);
+//   CHECK_F(features, VIRTIO_CHARDEV_F_MULTIPORT);
+//   CHECK_F(features, VIRTIO_CHARDEV_F_EMERG_WRITE);
+
+//   virtio_header_set_dword(iobase, OFFSET_OF(struct virtio_header, guest_features), (u8*)&features);
+
+//   u32 features1 = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
+
+//   if (features == features1)
+//   {
+//     LOG("FEATURE NAGOTIATION SUCCSESS!\n");
+//   }
+//   else
+//   {
+//     return 0;
+//   }
+
+//   virtio_add_status(iobase, VIRTIO_STATUS_DRI_OK);
+
+//   u16 queue_size = virtio_header_get_word(iobase, OFFSET_OF(struct virtio_header, queue_size));
+
+//   LOG("QUEUE SIZE = %x\n", queue_size);
+
+//   struct virtio_chardev_header header = {};
+//   u32 offset = sizeof(struct virtio_header);
+
+//   if (dev -> msix != 0)
+//     offset += sizeof(struct virtio_msix_header);
+
+//   virtio_get_config(iobase, offset, (u8*)&header, sizeof(struct virtio_chardev_header));
+
+//   LOG("CHARDEV %u %u %u\n", header.rows, header.cols, header.max_n_ports);
+
+//   u32 zero = 0;
+//   virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_select), (u8*)&zero);
+//   u32 qaddr = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, queue_size));
+
+//   LOG("VIRTQUEUE SIZE %d\n", qaddr);
+
+//   return 1;
+// }
+
+void
+init_vdev_common(struct pci_dev *dev, struct virtio_dev *vdev)
+{
+  vdev -> iobase = pci_dev_get_iobase(dev);
+}
+
 u8
 virtio_install()
 {
   struct dlist_node *it = NULL;
-  struct pci_dev *dev;
+  struct pci_dev   *dev;
 
-  it = pci_lookup_device(it, VIRTIO_VENDOR_ID, VIRTIO_CHAR_DEVICE_ID, VIRTIO_CHAR_DEVICE_SUBSYSTEM_ID);
-
-  if (it == NULL)
+  it = pci_lookup_device(it, VIRTIO_VENDOR_ID);
+  while (it !=  NULL)
   {
-    return ERINIT;
+    dev = CONTAINER_OF(it, struct pci_dev, self);
+    if (dev -> device_id < 0x1000  && dev -> device_id > 0x1005)
+      goto nextl;
+
+    LOG("Got valid virtio device with vendor id 0x%04x and device id 0x%04x\n",
+       dev -> vendor_id, dev -> device_id);
+
+    struct virtio_dev vdev = {};
+    init_vdev_common(dev, &vdev);
+
+    switch (dev -> subsystem_id)
+    {
+      case VIRTIO_SUBSYSTEM_CHARDEV:
+      {
+        init_vdev_console(&vdev);
+      }break;
+
+      case VIRTIO_SUBSYSTEM_BLOCK:
+      {
+      }break;
+
+      case VIRTIO_SUBSYSTEM_NETWORK:
+      {
+      }break;
+
+      default:
+      {
+        goto nextl;
+      }
+    }
+
+  nextl:
+    it = pci_lookup_device_next(it, VIRTIO_VENDOR_ID);
   }
-
-  dev = CONTAINER_OF(it, struct pci_dev, self);
-  LOG("Found Valid virtio device!\n");
-  LOG("Vendort id = 0x%04x\n", dev -> vendor_id);
-  LOG("capabilities = 0x%02x\n", dev -> capabilities);
-
-  u32 iobase = 0;
-
-  iobase = pci_dev_get_iobase(dev);
-
-  virtio_add_status(iobase, VIRTIO_STATUS_ACK);
-  virtio_add_status(iobase, VIRTIO_STATUS_DRI);
-
-  u32 features = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
-
-  LOG("FEATURES = %08x!\n", features);
-
-  CHECK_F(features, VIRTIO_CHARDEV_F_SIZE);
-  CHECK_F(features, VIRTIO_CHARDEV_F_MULTIPORT);
-  CHECK_F(features, VIRTIO_CHARDEV_F_EMERG_WRITE);
-
-  virtio_header_set_dword(iobase, OFFSET_OF(struct virtio_header, guest_features), (u8*)&features);
-
-  u32 features1 = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
-
-  if (features == features1)
-  {
-    LOG("FEATURE NAGOTIATION SUCCSESS!\n");
-  }
-  else
-  {
-    return 0;
-  }
-
-  virtio_add_status(iobase, VIRTIO_STATUS_DRI_OK);
-
-  u16 queue_size = virtio_header_get_word(iobase, OFFSET_OF(struct virtio_header, queue_size));
-
-  LOG("QUEUE SIZE = %x\n", queue_size);
-
-  struct virtio_chardev_header header = {};
-  u32 offset = sizeof(struct virtio_header);
-
-  if (dev -> msix != 0)
-    offset += sizeof(struct virtio_msix_header);
-
-  virtio_get_config(iobase, offset, (u8*)&header, sizeof(struct virtio_chardev_header));
-
-  LOG("CHARDEV %u %u %u\n", header.rows, header.cols, header.max_n_ports);
-
-  u32 zero = 0;
-  virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_select), (u8*)&zero);
-  u32 qaddr = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, queue_size));
-
-  LOG("VIRTQUEUE SIZE %d\n", qaddr);
 
   return 1;
 }
