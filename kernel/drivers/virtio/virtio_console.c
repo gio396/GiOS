@@ -82,6 +82,8 @@ init_vdev_console(struct virtio_dev *vdev)
     return 0;
   }
 
+  // virtio_add_status(iobase, VIRTIO_STATUS_FEATURES_OK);
+
   virtio_set_queue(cdev -> vdev, 0, 
     virtio_create_queue("r0",  virtio_get_queue_size(cdev -> vdev, 0)));
   virtio_set_queue(cdev -> vdev, 1, 
@@ -95,8 +97,7 @@ init_vdev_console(struct virtio_dev *vdev)
 
   while(1)
   {
-    i8 *kata = "kata";
-    vdev_console_write(cdev, 0, (u8*)kata, 5);
+    vdev_console_write(cdev, 0, (u8*)"kata", 5);
     sleep(2000);
   }
 
@@ -112,13 +113,8 @@ vdev_console_write(struct virtio_console *cdev, u32 port, u8 *buffer, size_t len
     qidx = WN(port);
   }
 
-  LOG("QIDX %d\n", qidx);
-
   struct virtio_queue *q = virtio_get_queue(cdev -> vdev, qidx);
   virtio_queue_enqueue(q, buffer, len);
   virtio_dev_kick_queue(cdev -> vdev, q);
-
-  sleep(1000);
   LOG("USED IDX! %d\n", q -> used -> idx);
-
 }

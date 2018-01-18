@@ -228,7 +228,8 @@ virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
   dev -> virtq[idx] -> idx = idx;
 
   u32 iobase = dev -> iobase;
-  u32 uaddr = (u32)que -> desc;
+  u32 uaddr = (u32)que -> desc / 4096;
+  
   virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_select), (u8*)&idx);
   virtio_header_set_dword(iobase, OFFSET_OF(struct virtio_header, queue_addr), (u8*)&uaddr);
 

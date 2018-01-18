@@ -68,7 +68,9 @@ virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len)
   q -> desc[head].flags = VIRTQ_DESC_F_WRITE;
 
   q -> desc[head].addr = (u64)((u32)buffer);
-  q -> desc[head].len  = (u32)len;
+
+  LOG("addr %p\n", q -> desc[head].addr);
+  q -> desc[head].len  = (u32)len + 1;
 
   q -> free_head = q -> desc[head].next;
 

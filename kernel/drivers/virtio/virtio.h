@@ -15,8 +15,8 @@
 #define VIRTIO_STATUS_ACK         0
 #define VIRTIO_STATUS_DRI         1
 #define VIRTIO_STATUS_DRI_OK      2
-#define VIRTIO_STATUS_FAILED      7
-#define VIRTIO_STATUS_FEATURES_OK 
+#define VIRTIO_STATUS_FEATURES_OK 3
+#define VIRTIO_STATUS_FAILED      6
 
 
 struct virtio_dev
