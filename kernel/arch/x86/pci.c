@@ -350,6 +350,8 @@ pci_lookup_device_start()
 struct dlist_node*
 pci_lookup_device_next(struct dlist_node *it, u16 vendor_id)
 {
+  it = it -> next;
+
   FOR_EACH_LIST_C(it)
   {
     struct pci_dev *dev = CONTAINER_OF(it, struct pci_dev, self);

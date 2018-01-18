@@ -23,6 +23,7 @@
 #include <string.h>
 #include <assert.h>
 #include <macros.h>
+#include <memory.h>
 
 
 extern const u32 l_srodata;
@@ -110,7 +111,6 @@ kmain(u32 mboot_magic, struct multiboot_info *mboot_info)
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
-
   pci_init_enum();
 
   virtio_install();

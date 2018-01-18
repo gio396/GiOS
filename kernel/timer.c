@@ -5,6 +5,7 @@
 #include <arch/x86/irq.h>
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/page.h>
+#include <arch/x86/io.h>
 
 #include <string.h>
 #include <list.h>
@@ -274,10 +275,8 @@ sleep(i32 ms)
 
   while (wakeup_flag == 0)
   {
-    for (i32 i = 0; i < 100; i++)
-    {
-      __asm__ __volatile__ ("NOP");
-    }
+    halt();
   }
+  
   wakeup_flag = 0;
 }

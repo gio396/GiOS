@@ -126,13 +126,13 @@ page_init()
   {
     for(u32 j = 0; j < 1024; j++)
     {
-      first_page_table[p * 0x400 + j] = EMPTY_PRESENT((p) * 0x400000 + 0x1000 * j);
+      first_page_table[p * 1024 + j] = EMPTY_PRESENT((p) * 0x400000 + 0x1000 * j);
     }
   }
 
   first_page_table[0] = EMPTY_PAGE;
 
-  free_range((void*)(mb(8)), (void*)(mb(128)));
+  free_range((void*)(mb(4)), (void*)(mb(128)));
 }
 
 struct free_page_list

@@ -12,10 +12,10 @@
 #define VIRTIO_BLOCK_DEVICE_SUBSYSTEM_ID 0x0002
 #define VIRTIO_CHAR_DEVICE_SUBSYSTEM_ID  0x0003
 
-#define VIRTIO_STATUS_ACK         1
-#define VIRTIO_STATUS_DRI         2
-#define VIRTIO_STATUS_DRI_OK      3
-#define VIRTIO_STATUS_FAILED      8
+#define VIRTIO_STATUS_ACK         0
+#define VIRTIO_STATUS_DRI         1
+#define VIRTIO_STATUS_DRI_OK      2
+#define VIRTIO_STATUS_FAILED      7
 #define VIRTIO_STATUS_FEATURES_OK 
 
 
@@ -26,6 +26,11 @@ struct virtio_dev
 
   u32 iobase;
   u32 features;
+
+  //TODO(gio): abbility to dynamicly add virtques.
+  //           needs generic malloc. 
+
+  struct virtio_queue *virtq[64];
 };
 
 struct virtio_cap
@@ -99,7 +104,13 @@ virtio_add_status(u32 iobase, u8 ns);
 void
 virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que);
 
+struct virtio_queue*
+virtio_get_queue(struct virtio_dev *dev, i32 idx);
+
 u32
 virtio_get_queue_size(struct virtio_dev *dev, i32 idx);
+
+void
+virtio_dev_kick_queue(struct virtio_dev *dec, struct virtio_queue *q);
 
 #endif

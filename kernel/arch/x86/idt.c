@@ -174,7 +174,6 @@ const char* idt_error_desc[] =
   "Debug Exception.",
   "Non maskable interupt Exception.",
   "Breakpoint Exception.",
-  "Into detected overflow Exception.",
   "Out of bounds Exception.",
   "Invalid opcode Exception.",
   "No compressor Exception.",

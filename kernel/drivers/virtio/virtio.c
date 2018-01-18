@@ -79,10 +79,11 @@ VIRTIO_HEADER_GET_GENERIC(32, dword)
 void
 virtio_add_status(u32 iobase, u8 ns)
 {
-  u32 status = virtio_header_get_byte(iobase, OFFSET_OF(struct virtio_header, device_status)) &0xff;
-  LOG("Current status 0x%02x\n", status);
-  status |= ns;
+  u32 status = virtio_header_get_byte(iobase, OFFSET_OF(struct virtio_header, device_status)) & 0xff;
+  status |= (1 << ns);
   virtio_header_set_byte(iobase, OFFSET_OF(struct virtio_header, device_status), (u8*)&status);
+  status = virtio_header_get_byte(iobase, OFFSET_OF(struct virtio_header, device_status)) & 0xff;
+  LOG("STATUS %02x!\n", status);
 }
 
 void
@@ -179,7 +180,8 @@ virtio_install()
   struct pci_dev   *dev;
 
   it = pci_lookup_device(it, VIRTIO_VENDOR_ID);
-  while (it !=  NULL)
+
+  while (it != NULL)
   {
     dev = CONTAINER_OF(it, struct pci_dev, self);
     if (dev -> device_id < 0x1000  && dev -> device_id > 0x1005)
@@ -188,14 +190,14 @@ virtio_install()
     LOG("Got valid virtio device with vendor id 0x%04x and device id 0x%04x\n",
        dev -> vendor_id, dev -> device_id);
 
-    struct virtio_dev vdev = {};
-    init_vdev_common(dev, &vdev);
+    struct virtio_dev *vdev = (struct virtio_dev*)kalloc();
+    init_vdev_common(dev, vdev);
 
     switch (dev -> subsystem_id)
     {
       case VIRTIO_SUBSYSTEM_CHARDEV:
       {
-        init_vdev_console(&vdev);
+        init_vdev_console(vdev);
       }break;
 
       case VIRTIO_SUBSYSTEM_BLOCK:
@@ -209,7 +211,7 @@ virtio_install()
       default:
       {
         goto nextl;
-      }
+      }break;
     }
 
   nextl:
@@ -217,4 +219,47 @@ virtio_install()
   }
 
   return 1;
+}
+
+void
+virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
+{
+  dev -> virtq[idx]        = que;
+  dev -> virtq[idx] -> idx = idx;
+
+  u32 iobase = dev -> iobase;
+  u32 uaddr = (u32)que -> desc;
+  virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_select), (u8*)&idx);
+  virtio_header_set_dword(iobase, OFFSET_OF(struct virtio_header, queue_addr), (u8*)&uaddr);
+
+  u32 addr = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, queue_addr));
+
+  if (addr == uaddr)
+  {
+    LOG("Successfully set virtq queue!\n");
+  }
+}
+
+
+struct virtio_queue*
+virtio_get_queue(struct virtio_dev *dev, i32 idx)
+{
+  return dev -> virtq[idx];
+}
+
+u32
+virtio_get_queue_size(struct virtio_dev *dev, i32 idx)
+{
+  u32 iobase = dev -> iobase;
+  virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_select), (u8*)&idx);
+
+  u32 size = virtio_header_get_word(iobase, OFFSET_OF(struct virtio_header, queue_size));
+
+  return size;
+}
+
+void
+virtio_dev_kick_queue(struct virtio_dev *dev, struct virtio_queue *q)
+{
+  virtio_queue_kick(q, dev -> iobase);
 }

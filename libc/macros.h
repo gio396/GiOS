@@ -127,4 +127,6 @@
 #define kb(x) (bt(x) * 1024)
 #define mb(x) (kb(x) * 1024)
 
+#define ALIGN(v, a) (((v) + (a)) & ~(a))
+
 #endif
