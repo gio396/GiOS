@@ -1,8 +1,11 @@
 OBJS= \
-		framebuffer.o gdt.o idt.o io.o irq.o page.o int.o COM1.o cpuid.o msr.o apic.o acpi.o pit.o
+	device.o device_bus.o
 
-all: $(OBJS)
+all: $(SUBDIRS) $(OBJS)
 	cp *.o $(BUILD_ROOT)/OBJS
+
+$(SUBDIRS):
+	$(MAKE) -C $@ BUILD_ROOT="$(BUILD_ROOT)"
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(CINCLUDES) $(DEFINES)  $< -o $@

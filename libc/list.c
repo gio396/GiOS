@@ -34,8 +34,6 @@ slist_insert_after(struct slist_node *prev, struct slist_node *in)
 struct dlist_node*
 dlist_get_tail(struct dlist_node *from)
 {
-  assert1(from);
-
   while(from->next)
     from = from->next;
 

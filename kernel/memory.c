@@ -2,6 +2,7 @@
 
 #include <macros.h>
 #include <list.h>
+#include <string.h>
 
 #include <arch/x86/page.h>
 #include <arch/x86/framebuffer.h>
@@ -85,20 +86,6 @@ alligned_alloc(size_t size, size_t allignment)
     struct alloc_header *ahead = (struct alloc_header*)((u8*)(header) + offset);
     ahead -> size = size + offset - sizeof(struct alloc_header);
 
-    u32 left = header -> size - size - offset;
-
-    if (left < 128)
-    {
-      size += left;
-    }
-    else
-    {
-      struct memory_list_header *new_head = (struct memory_list_header*)((u8*)header + size + offset);
-      new_head -> size = header -> size - offset - size;
-      new_head -> self.next = it -> next;
-      it -> next = &new_head -> self;
-    }
-
     if (last)
     {
       last -> next = it -> next;
@@ -126,26 +113,21 @@ alligned_alloc(size_t size, size_t allignment)
   struct alloc_header *ahead = (struct alloc_header*)((u8*)(header) + offset);
   ahead -> size = size + offset - sizeof(struct alloc_header);
 
-  u32 left = header -> size - size - offset;
-
-  if (left < 128)
-  {
-    size += left;
-  }
-  else
-  {
-    struct memory_list_header *new_head = (struct memory_list_header*)((u8*)header + size + offset);
-    new_head -> size = header -> size - offset - size;
-    new_head -> self.next = it -> next;
-    it = &new_head -> self;
-  }
-
   free_list.slist_node = it -> next;
   return (void*)(ahead + 1);
 }
 
 void*
-malloc(size_t size)
+kmalloc(size_t size)
 {
   return alligned_alloc(size, DEFAULT_ALLIGNMENT);
+}
+
+void*
+kzmalloc(size_t size)
+{
+  void *ptr = alligned_alloc(size, DEFAULT_ALLIGNMENT);
+  memset(ptr, 0, size);
+
+  return ptr;
 }

@@ -5,10 +5,18 @@
 
 #include "virtio.h"
 
+struct virtio_console_config
+{
+  u16 cols;
+  u16 rows;
+  u32 nr_ports;
+  u32 emerg_wr;
+};
+
 struct virtio_console
 {
   struct virtio_dev *vdev;
-//specific.
+  struct virtio_console_config cfg;
 };
 
 b8

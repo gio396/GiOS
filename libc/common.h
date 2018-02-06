@@ -50,11 +50,14 @@ typedef i64 size_t;
 #define USED __attribute__((used))
 #define UNUSED(x) (void)(x)
 
+#define NULL (void*)(0)
+
 // #define min(lhs, rhs) ((lhs) < (rhs) ? (lhs) : (rhs))
 // #define max(lhs, rhs) ((lhs) > (rhs) ? (lhs) : (rhs))
 
 #ifdef __GIOS_DEBUG__
 #define LOG(...) printk(&state, __VA_ARGS__)
+#define LOGV(f, v) printk(&state, #v " " f "\n", v)
 #else
 #define LOG(...)
 #endif
@@ -68,6 +71,6 @@ typedef i64 size_t;
 #define att_packed set_att(packed);
 #define att_aligned(val) set_att_2(aligned, val)
 
-#define NULL (void*)(0)
+#define __lzcnt(dst, src) __asm__ __volatile__ ("lzcnt %1, %0\n":"=r"(dst) :"rm"(src))
 
 #endif

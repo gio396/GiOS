@@ -12,6 +12,8 @@
 #define VIRTIO_BLOCK_DEVICE_SUBSYSTEM_ID 0x0002
 #define VIRTIO_CHAR_DEVICE_SUBSYSTEM_ID  0x0003
 
+#define VIRTIO_MSIX_HEADER_SIZE   0x04
+
 #define VIRTIO_STATUS_ACK         0
 #define VIRTIO_STATUS_DRI         1
 #define VIRTIO_STATUS_DRI_OK      2
@@ -55,6 +57,10 @@ struct virtio_header
   u16 queue_notify;
   u8  device_status;
   u8  isr_status;
+
+  //if msix is enabled !
+  u16 config_msix_vector;
+  u16 queue_msix_vector;
 } att_packed;
 
 struct virtio_msix_header
@@ -112,5 +118,8 @@ virtio_get_queue_size(struct virtio_dev *dev, i32 idx);
 
 void
 virtio_dev_kick_queue(struct virtio_dev *dec, struct virtio_queue *q);
+
+void
+virtio_read_config(struct virtio_dev *dev, size_t size, u8* buffer);
 
 #endif

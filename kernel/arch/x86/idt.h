@@ -32,4 +32,12 @@ idt_install();
 void
 set_irq_gates();
 
+u32
+get_next_irq();
+
+
+
+void
+subscribe_irq(u32 irq, void* handler);
+
 #endif

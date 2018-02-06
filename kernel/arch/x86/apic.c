@@ -56,6 +56,9 @@
 global i32 apic_freq = 0;
 global i32 apic_tick_count = 1;
 
+extern void (*irq_handler_pointer)(const union biosregs *iregs);
+
+
 global struct 
 {
   u8 ioapic_id;
@@ -98,6 +101,37 @@ ioapic_read_reg(u8 offset, u32* val)
 
   ioapic_base_cmd[0] = offset;
   *val = ioapic_base_data[0];
+}
+
+u32
+lzcnt(u32 val)
+{
+  u32 res;
+  __lzcnt(res, val);
+
+  return res;
+}
+
+u32
+apic_read_isr()
+{
+  for (i32 i = 8; i >= 1; i--)
+  {
+    u32 reg = apic_read_reg(APIC_IN_SERVICE0_REGISTER + 0x10 * i);
+    if (reg) return 32 * i + lzcnt(reg);
+  }
+
+  return 256;
+}
+
+void
+apic_irq_handler(const union biosregs *iregs)
+{
+  u8 vector = apic_read_isr();
+  UNUSED(iregs); UNUSED(vector);
+  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);  
+
+  irq_eoi(1, vector);
 }
 
 void  
@@ -212,14 +246,18 @@ apic_enable(u32 apic_base_address)
 
   u32 version;
   ioapic_read_reg(IOAPIC_REG_VERSION, &version);
-  printk(&state, "IOAPIC Version = 0x%08X\n", version);
+  printk(&state, "IOAPIC Version = 0x%02X\n", version & 0xff);
+  printk(&state, "IOAPIC Max RT entries = 0x%02x\n", (version >> 16) & 0xff);
 
-  //setting up keyboard interrupt vector
-  ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 2, IOAPIC_SEG_INT_VEC(0x21) | IOAPIC_SEG_DEL_MOD(0x00) | IOAPIC_SEG_DES_MOD(0x00) | 
-                                                IOAPIC_SEG_DEL_STA(0x00) | IOAPIC_SEG_INT_POL(0x00) | IOAPIC_SEG_IRR_RO (0x00) |
-                                                IOAPIC_SEG_TRI_MOD(0x00) | IOAPIC_SEG_INT_MAS(0x00));
 
-  ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + 3, IOAPIC_DEST_FIELD(0x00));
+  //keyboard rte
+  u32 keyboard_lo = IOAPIC_SEG_INT_VEC(0x21) | IOAPIC_SEG_DEL_MOD(0x00) | IOAPIC_SEG_DES_MOD(0x00) | 
+                                               IOAPIC_SEG_DEL_STA(0x00) | IOAPIC_SEG_INT_POL(0x00) | IOAPIC_SEG_IRR_RO (0x00) |
+                                               IOAPIC_SEG_TRI_MOD(0x00) | IOAPIC_SEG_INT_MAS(0x00);
+  ioapic_register_rte(1, 0x00, keyboard_lo);
+
+  //apic handler;
+  irq_handler_pointer = apic_irq_handler;
 }
 
 void
@@ -290,3 +328,10 @@ parse_madt_table(void)
   }
 }
 
+void
+ioapic_register_rte(u32 irq, u32 cpu, u32 lo)
+{
+  //NOTE(GIO:) Only physical destination ids and single cpu!
+  ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + irq * 2, lo);
+  ioapic_write_reg(IOAPIC_REG_RED_TLB_BASE + irq * 2 + 1, IOAPIC_DEST_FIELD(cpu));
+}

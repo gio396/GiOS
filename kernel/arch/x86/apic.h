@@ -74,4 +74,7 @@ apic_timer_interrupt_in(u32 us);
 u32
 apic_timer_get_tick_count(void);
 
+void
+ioapic_register_rte(u32 irq, u32 cpu, u32 lo);
+
 #endif

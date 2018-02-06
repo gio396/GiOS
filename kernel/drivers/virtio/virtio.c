@@ -5,7 +5,7 @@
 #include <list.h>
 
 #include <arch/x86/io.h>
-#include <arch/x86/pci.h>
+#include <drivers/pci/pci.h>
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/page.h>
   
@@ -14,6 +14,9 @@
 #define VIRTIO_SUBSYSTEM_CHARDEV  3
 
 #include "virtio_console.h"
+
+__attribute__((section(".init0"))) u32 kata1 = 12;
+
 
 #define ERINIT -1
 
@@ -75,6 +78,48 @@ VIRTIO_HEADER_SET_GENERIC(64, qword)
 VIRTIO_HEADER_GET_GENERIC(8,  byte)
 VIRTIO_HEADER_GET_GENERIC(16, word)
 VIRTIO_HEADER_GET_GENERIC(32, dword)
+
+b8 
+virtio_probe(struct pci_dev *dev)
+{
+  return 0;
+}
+
+b8
+virtio_setup(struct pci_dev *dev)
+{
+  return 0;
+}
+
+b8
+virtio_match(struct pci_dev *dev)
+{
+  return 0;
+}
+
+struct pci_id id_list[] = {
+  {VIRTIO_VENDOR_ID, PCI_DEVICE_ANY, PCI_SUBSYSTEM_ANY},
+  {0, 0, 0}
+};
+
+struct pci_driver driver = {
+  .name = ".virtio_pci", 
+
+  .id_list = id_list,
+
+  .match = virtio_match,
+  .probe = virtio_probe, 
+  .setup = virtio_setup,
+};
+
+void
+virtio_driver_register()
+{
+  LOG("EXPORT!\n");
+  return;
+};
+
+INIT_CORE0_EXPORT(virtio_driver_register);
 
 void
 virtio_add_status(u32 iobase, u8 ns)
@@ -171,6 +216,7 @@ void
 init_vdev_common(struct pci_dev *dev, struct virtio_dev *vdev)
 {
   vdev -> iobase = pci_dev_get_iobase(dev);
+  vdev -> pci_dev = dev;
 }
 
 u8
@@ -239,6 +285,12 @@ virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
   {
     LOG("Successfully set virtq queue!\n");
   }
+
+  if (dev -> pci_dev -> msix.enabled)
+  {
+    virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, config_msix_vector), (u8*)&idx);
+    virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_msix_vector), (u8*)&idx);
+  }
 }
 
 
@@ -263,4 +315,27 @@ void
 virtio_dev_kick_queue(struct virtio_dev *dev, struct virtio_queue *q)
 {
   virtio_queue_kick(q, dev -> iobase);
+}
+
+internal size_t
+get_config_offset(struct virtio_dev *dev)
+{
+  size_t offset = sizeof(struct virtio_header);
+
+  if (!dev -> pci_dev -> msix.enabled)
+    offset -= VIRTIO_MSIX_HEADER_SIZE;
+
+  return offset;
+}
+
+void
+virtio_read_config(struct virtio_dev *dev, size_t size, u8* buffer)
+{
+  size_t offset = get_config_offset(dev);
+  size_t iobase = dev -> iobase;
+
+  for (i32 i = 0; i < size; i++)
+  {
+    buffer[i] = virtio_header_get_byte(iobase, offset  + i);
+  }
 }

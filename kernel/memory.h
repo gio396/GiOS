@@ -7,6 +7,9 @@ void*
 alligned_alloc(size_t size, size_t allignment);
 
 void*
-malloc(size_t size);
+kmalloc(size_t size);
+
+void*
+kzmalloc(size_t size);
 
 #endif

@@ -13,6 +13,10 @@
 #define MAX_TIMERS  4096 / sizeof(struct timer_list_entry)
 #define BITMAP_SIZE MAX_TIMERS >> 2
 
+#ifdef __GIOS_DEBUG__
+#undef __GIOS_DEBUG__
+#endif
+
 volatile b32 wakeup_flag = 0;
 
 global u32 bit_map[BITMAP_SIZE];
@@ -263,7 +267,6 @@ new_timer(u32 time, timer_function_proc function, u32 callback_arg)
 void
 wakeup_callback(u32 val)
 {
-  printk(&state, "wakeup callback!\n");
   wakeup_flag = val;
 }
 

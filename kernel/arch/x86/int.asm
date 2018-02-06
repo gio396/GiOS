@@ -80,6 +80,7 @@ IRQ 13, 45 ;FPU
 IRQ 14, 46 ;primari IDE channel
 IRQ 15, 47 ;secondary IDE channel
 IRQ Time, 48 ;timer
+IRQ high,  49 ;rest
 
 extern idt_common_handler
 isr_common_stub
@@ -138,3 +139,35 @@ irq_common_stub:
   add esp, 8 ;clear int_no err_no
   iret
 
+
+extern irq_handler_pointer
+irq_apic_stub:
+  cli
+  sub esp, 8; int_no err_no
+  
+  pushad
+  push ds
+  push es
+  push fs
+  push gs
+
+  mov ax, 0x10
+  mov ds, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
+  mov eax, esp
+  push eax
+
+  mov eax, irq_handler_pointer
+  call eax
+
+  pop eax
+  pop gs
+  pop fs
+  pop es
+  pop ds
+  popad
+
+  add esp, 8; clear int_no   err_no
+  iret

@@ -11,8 +11,8 @@
 #include <arch/x86/apic.h>
 #include <arch/x86/acpi.h>
 #include <arch/x86/pit.h>
-#include <arch/x86/pci.h>
 
+#include <drivers/pci/pci.h>
 #include <drivers/virtio/virtio.h>
 
 #include <timer.h>
@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <macros.h>
 #include <memory.h>
+#include <kinit.h>
 
 
 extern const u32 l_srodata;
@@ -33,6 +34,8 @@ extern const u32 l_edata;
 extern const u32 l_sbss;
 extern const u32 l_ebss;
 extern const u32 l_ekernel;
+
+__attribute__((section(".init0"))) u32 kata4 = 1;
 
 void
 timer_callback(u32 val)
@@ -111,7 +114,11 @@ kmain(u32 mboot_magic, struct multiboot_info *mboot_info)
   cpuid_string(CPUID_GET_VENDOR, buffer);
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
-  pci_init_enum();
 
-  virtio_install();
+  pci_init();
+
+  kinit_core0();
+
+  pci_enum();
+  // virtio_install();
 }

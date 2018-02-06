@@ -1,8 +1,11 @@
 #include "pci.h"
-#include "io.h"
-#include "timer.h"
-#include "framebuffer.h"
-#include "page.h"
+
+#include <arch/x86/io.h>
+#include <arch/x86/framebuffer.h>
+#include <arch/x86/page.h>
+#include <memory.h>
+
+#include <timer.h>
 
 #include <macros.h>
 #include <string.h>
@@ -11,47 +14,25 @@
 // 31          30 - 24   23 - 16     15 - 11         10 - 8            7 - 2            1-0
 // Enable Bit  Reserved  Bus Number  Device Number   Function Number   Register Number  00
 
+#define MSG_CTRL_MASK_BIT (1 << 14)
 
-struct linear_allocator
-{
-  void *mem_base;
-  u32   mem_used;
-} la;
-
-void*
-allocate(struct linear_allocator *la, u32 size)
-{
-  if (la -> mem_used + size > kb(4))
-    return NULL;
-
-  void *res = la -> mem_base + la -> mem_used;
-  la -> mem_used += size;
-
-  return res;
-}
+struct pci_bus *global_bus;
 
 struct pci_bus*
-pci_append_bus(struct pci_bus *parrent)
+pci_append_bus(struct pci_bus *node, struct pci_bus *parrent)
 {
-  struct pci_bus *res = (struct pci_bus*)allocate(&la, sizeof(struct pci_bus));
-  ZERO_STRUCT(res, struct pci_bus);
+  node -> parrent = parrent;
+  dlist_insert_tail(&parrent -> children, &node -> next);
 
-  res -> parrent = parrent;
-
-  dlist_insert_tail(&parrent -> children, &res -> next);
-
-  return res;
+  return node;
 }
 
 struct pci_dev*
-pci_append_device(struct pci_bus *bus)
+pci_append_device(struct pci_dev *dev, struct pci_bus *bus)
 {
-  struct pci_dev *res = (struct pci_dev*)allocate(&la, sizeof(struct pci_dev));
-  ZERO_STRUCT(res, struct pci_dev);
+  dlist_insert_tail(&bus -> devices, &dev -> self);
 
-  dlist_insert_tail(&bus -> devices, &res -> self);
-
-  return res;
+  return dev;
 }
 
 void
@@ -69,7 +50,7 @@ pci_config_read_byte(u8 bus, u8 slot, u8 func, u8 offset)
   adress = ((u32)0x80000000 | (lbus << 16) | (lslot << 11) | (lfunc << 8) | (offset & 0xfc));
 
   outl(0xCF8, adress);
-  tmp = (u16)((inl(0xCFC) >> ((offset % 4) * 4)) & 0xff);
+  tmp = (u16)((inl(0xCFC) >> ((offset & 3) * 8)) & 0xff);
 
   return tmp;
 }
@@ -77,6 +58,8 @@ pci_config_read_byte(u8 bus, u8 slot, u8 func, u8 offset)
 u16
 pci_config_read_word(u8 bus, u8 slot, u8 func, u8 offset)
 {
+  assert1(ALIGNED(offset, 0x1));
+
   u32 adress;
   u32 lbus  = bus;
   u32 lslot = slot;
@@ -86,7 +69,7 @@ pci_config_read_word(u8 bus, u8 slot, u8 func, u8 offset)
   adress = ((u32)0x80000000 | (lbus << 16) | (lslot << 11) | (lfunc << 8) | (offset & 0xfc));
 
   outl(0xCF8, adress);
-  tmp = (u16)((inl(0xCFC) >> ((offset & 2) *8)) & 0xffff);
+  tmp = (u16)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
 
   return tmp;
 }
@@ -94,6 +77,8 @@ pci_config_read_word(u8 bus, u8 slot, u8 func, u8 offset)
 u32
 pci_config_read_dword(u8 bus, u8 slot, u8 func, u8 offset)
 {
+  assert1(ALIGNED(offset, 0x1));
+
   u32 adress;
   u32 lbus  = bus;
   u32 lslot = slot;
@@ -123,6 +108,20 @@ pci_config_write_dword(u8 bus, u8 slot, u8 func, u8 offset, u32 value)
 }
 
 void
+pci_config_write_word(u8 bus, u8 slot, u8 func, u8 offset, u16 value)
+{
+  u32 adress;
+  u32 lbus  = bus;
+  u32 lslot = slot;
+  u32 lfunc = func;
+
+  adress = ((u32)0x80000000 | (lbus << 16) | (lslot << 11) | (lfunc << 8) | (offset & 0xfe));
+
+  outl(0xCF8, adress);
+  outs(0xCFC + (offset & 2), value);
+}
+
+void
 check_device(u8 bus, u8 device, struct pci_bus *lbus)
 {
   u8 function = 0;
@@ -131,9 +130,9 @@ check_device(u8 bus, u8 device, struct pci_bus *lbus)
 
   if (vendor_id == 0xffff) return; //non-existant device
 
-  struct pci_dev *ldevice = pci_append_device(lbus);
+  struct pci_dev ldevice = {};
 
-  check_function(bus, device, function, lbus, ldevice);
+  check_function(bus, device, function, lbus, &ldevice);
 
   header_type = pci_config_read_word(bus, device, function, PCI_HEADER_TYPE_OFFSET);
   if ((header_type & 0x80) != 0)
@@ -147,7 +146,7 @@ check_device(u8 bus, u8 device, struct pci_bus *lbus)
         halt();
 
         //TODO(gio): add  support for devices with multiple functions!
-        check_function(bus, device, function, lbus, ldevice);
+        check_function(bus, device, function, lbus, &ldevice);
       }
     }
   }
@@ -180,17 +179,76 @@ pci_dev_check_msix_capability(struct pci_dev *dev)
 {
   u32 pos = pci_dev_find_capability(dev, PCI_MSIX_CAP);
 
-  LOG("MSI POS = %p\n", pos);
-
   if (pos == 0)
   {
-    dev -> msix = 0;
+    dev -> has_msix = 0;
     return 0;
   }
 
-  //TODO(gio): setup msi vectors
-  dev -> msix = 1;
+  LOG("Device %d has msix capability!\n", dev -> dev);
+  dev -> has_msix = 1;
+  dev -> msix.cap_base =  pos;
+
   return 1;
+}
+
+void
+pci_dev_setup_msix(struct pci_dev *dev)
+{
+  u8 pos = dev -> msix.cap_base;
+  u16 mctrl;
+  pci_dev_read_config_word(dev, pos + OFFSET_OF(struct msix_capability_header, message_controll), &mctrl);
+
+  LOG("MCTRL 0x%04x\n", mctrl);
+
+  u16 max_entries = (mctrl && 0x7ff) + 1;
+
+  u32 toff;
+  u32 pbaoff;
+  pci_dev_read_config_dword(dev, pos + OFFSET_OF(struct msix_capability_header, table_offset), &toff);
+  pci_dev_read_config_dword(dev, pos + OFFSET_OF(struct msix_capability_header, pba_offset), &pbaoff);
+
+  u8 toff_bar = toff & 0x07;
+  u8 pbaoff_bar = pbaoff & 0x07;
+
+  dev -> msix.allocated_entries = 0;
+  dev -> msix.max_entries = max_entries;
+  dev -> msix.per_vector_masking = (mctrl >> 8) & 0x1;
+  dev -> msix.big_addr  = (mctrl >> 7) & 0x1;
+  dev -> msix.table_addr = (u32*)(dev -> resources[toff_bar].start + (toff & (~0x07)));
+  dev -> msix.pba_addr = (u32*)(dev -> resources[pbaoff_bar].start + (pbaoff & (~0x07)));
+  dev -> msix.enabled = (mctrl >> 15) & 0x1;
+
+  LOG("ENABLED = %d\n", dev -> msix.enabled);
+
+  if (dev -> msix.enabled)
+  {
+    mmap(dev -> msix.table_addr, 1, 0);
+    mmap(dev -> msix.pba_addr,   1, 0);
+  }
+
+  LOGV("%p", dev -> msix.table_addr);
+  LOGV("%p", dev -> msix.pba_addr);
+  LOGV("%02x", dev -> msix.max_entries);
+}
+
+internal b8
+pci_find_driver(struct pci_driver **found, struct pci_dev *device)
+{
+  UNUSED(found);
+  UNUSED(device);
+
+  return 0;
+}
+
+internal b8
+driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
+{
+  struct pci_dev *dev = *pdev;
+  UNUSED(dev);
+  UNUSED(driver);
+
+  return 0;
 }
 
 void
@@ -201,8 +259,9 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
   u16 subsystem_id;
   u8 base_class;
   u8 sub_class;
-  u8 sbus;
   u8 pcapabilites;
+  u8 cmd; 
+  u8 revision;
 
   u16 lclass = pci_config_read_word(bus, device, function, PCI_CLASS_OFFSET);
   base_class = PCI_GET_BASE_CLASS(lclass);
@@ -211,17 +270,29 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
   device_id = pci_config_read_word(bus, device, function, PCI_DEVICE_ID_OFFSET);
   subsystem_id = pci_config_read_word(bus, device, function, PCI_SUBSYSTEM_ID_OFFSET);
   pcapabilites = pci_config_read_word(bus, device, function, PCI_CAPABILITIES_POINTER_OFFSET) & 0x00ff;
+  revision = pci_config_read_word(bus, device, function, PCI_REVISION_ID_OFFSET) & 0x00ff;
+  cmd = pci_config_read_dword(bus, device, function, PCI_CMD_REG_OFFSET);
 
-  LOG("class base 0x%0x\nclass sub 0x%0x\n", base_class, sub_class);
+  cmd |= PCI_COMMAND_MASTER | PCI_COMMAND_MEM | PCI_COMMAND_IO;
+
+  pci_config_write_dword(bus, device, function, PCI_CMD_REG_OFFSET, cmd);
+
+  cmd = pci_config_read_dword(bus, device, function, PCI_CMD_REG_OFFSET);
+
+  LOG("Vendor id 0x%04x\n", vendor_id);
+  LOG("Device id 0x%04x\n", device_id);
+  LOG("Class base 0x%0x\nclass sub 0x%0x\n", base_class, sub_class);
+  LOG("Revision 0x%0x\n", revision);
 
   ldev -> bus          = lbus;
-  ldev -> device       = device;
+  ldev -> dev          = device;
   ldev -> func         = function;
   ldev -> vendor_id    = vendor_id;
   ldev -> device_id    = device_id;
   ldev -> base_class   = base_class;
   ldev -> sub_class    = sub_class;
   ldev -> subsystem_id = subsystem_id;
+  ldev -> revision     = revision;
   ldev -> capabilities = pcapabilites;
 
   // fill resources!
@@ -258,30 +329,31 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
     }
   }
 
-  if (pci_dev_check_msix_capability(ldev) == 0)
+  if (pci_dev_check_msix_capability(ldev) == 1)
   {
-
+    pci_dev_setup_msix(ldev);
   }
 
-  if ((base_class == 0x60) && (sub_class == 0x04))
+  struct pci_driver *driver = NULL;
+
+  while(pci_find_driver(&driver, ldev))
   {
-    sbus = (pci_config_read_word(bus, device, function, PCI_01H_SECONDARY_BUS_OFFSET) >> 8) && 0x00ff;
-
-    struct pci_bus *nbus = pci_append_bus(lbus);
-    nbus -> self = ldev;
-
-    walk_bus(sbus, nbus);
+    if (driver_try_setup(driver, &ldev) != 0)
+      break;
   }
-}
 
-void
-pci_init_bus_mem()
-{
-  la.mem_base = kalloc();
-  la.mem_used = 0;
+  //TODO(gio): Handle bus-bus bridges!
+  // if ((base_class == 0x60) && (sub_class == 0x04))
+  // {
+  //   sbus = (pci_config_read_word(bus, device, function, PCI_01H_SECONDARY_BUS_OFFSET) >> 8) && 0x00ff;
 
-  global_bus = (struct pci_bus*)allocate(&la, sizeof(struct pci_bus));
-  ZERO_STRUCT(global_bus, struct pci_bus);
+  //   struct pci_bus *nbus = pci_append_bus(lbus);
+  //   nbus -> self = ldev;
+
+  //   walk_bus(sbus, nbus);
+  // }
+
+  //search for match in device bus.
 }
 
 void
@@ -313,9 +385,8 @@ print_pci(struct pci_bus *bus, i32 append)
 }
 
 void
-pci_init_enum()
+pci_enum()
 {
-  pci_init_bus_mem();
   u8 function = 0;
   u8 bus;
 
@@ -339,6 +410,8 @@ pci_init_enum()
   }
 
   print_pci(global_bus, 0);
+
+  // pci_init_drivers(global_bus);
 }
 
 struct dlist_node*
@@ -377,11 +450,11 @@ void
 pci_dev_read_config_byte(struct pci_dev *dev, u8 offset, u8 *res)
 {
   u8 bus  = dev -> bus -> bus;
-  u8 device = dev -> device;
+  u8 device = dev -> dev;
   u8 func = dev -> func;
   u16 tmp;
 
-  tmp = pci_config_read_word(bus, device, func, offset);
+  tmp = pci_config_read_byte(bus, device, func, offset);
 
   LOG("pci_dev_read_config_byte 0x%04x\n", tmp);
   *res = (u8)(tmp & 0xff);
@@ -391,11 +464,34 @@ void
 pci_dev_read_config_word(struct pci_dev *dev, u8 offset, u16 *res)
 {
   u8 bus  = dev -> bus -> bus;
-  u8 device = dev -> device;
+  u8 device = dev -> dev;
   u8 func = dev -> func;
   u16 tmp;
 
   tmp = pci_config_read_word(bus, device, func, offset);
+
+  *res = tmp;
+}
+
+void
+pci_dev_write_config_word(struct pci_dev *dev, u8 offset, u16 val)
+{
+  u8 bus = dev -> bus -> bus;
+  u8 device = dev -> dev;
+  u8 func = dev -> func;
+
+  pci_config_write_word(bus, device, func, offset, val);
+}
+
+void
+pci_dev_read_config_dword(struct pci_dev *dev, u8 offset, u32 *res)
+{
+  u8 bus  = dev -> bus -> bus;
+  u8 device = dev -> dev;
+  u8 func = dev -> func;
+  u32 tmp;
+
+  tmp = pci_config_read_dword(bus, device, func, offset);
 
   *res = tmp;
 }
@@ -420,9 +516,7 @@ pci_find_cap_next_ttl(u8 bus, u8 device, u8 function, i32 pos, u8 cap, i32 *ttl)
   u8 id;
   u16 ent;
 
-  LOG("posin = 0x%02x\n", pos);
   pos = pci_config_read_byte(bus, device, function, pos);
-  LOG("posin = 0x%02x\n", pos);
 
   while((*ttl)--)
   {
@@ -436,7 +530,6 @@ pci_find_cap_next_ttl(u8 bus, u8 device, u8 function, i32 pos, u8 cap, i32 *ttl)
     if (id == 0xff)
       break;
 
-    LOG("capabilities ID = 0x%x\n", id);
     if (id == cap)
       return pos;
 
@@ -462,7 +555,7 @@ pci_dev_find_capability(struct pci_dev *dev, u8 cap)
   i32 pos;
 
   u8 bus = dev -> bus -> bus;
-  u8 device = dev -> device;
+  u8 device = dev -> dev;
   u8 function = dev -> func;
 
   pos = pci_find_cap_start(bus, device, function);
@@ -488,4 +581,39 @@ pci_dev_get_iobase(struct pci_dev *dev)
   }
 
   return 0;
+}
+
+void
+pci_msix_enable(struct pci_dev *dev)
+{
+  u8 pos = dev -> msix.cap_base;
+
+  u16 mctrl;
+  pci_dev_read_config_word(dev, pos + OFFSET_OF(struct msix_capability_header, message_controll), &mctrl);
+  mctrl = mctrl & (~MSG_CTRL_MASK_BIT);
+  pci_dev_write_config_word(dev, pos + OFFSET_OF(struct msix_capability_header, message_controll), mctrl);
+}
+
+void
+pci_register_driver(struct pci_driver *driver)
+{
+  bus_register_driver(global_bus -> pci_device_bus, &driver -> device_driver);
+
+  struct dlist_root *root = &global_bus -> pci_drivers;
+  dlist_insert_tail(root, &driver -> self);
+}
+
+void
+pci_register_device(struct pci_dev *dev)
+{
+  bus_register_device(global_bus -> pci_device_bus, &dev -> device);
+  dlist_insert_tail(&dev -> bus -> devices, &dev -> self);
+}
+
+void
+pci_init()
+{
+  global_bus = (struct pci_bus* )kzmalloc(sizeof(struct pci_bus));
+
+  global_bus -> pci_device_bus = register_device_bus("pci_bus");
 }

@@ -1,4 +1,4 @@
-SUBDIRS="virtio"
+SUBDIRS="pci" "device" "virtio"
 SUBDIRSCLEAN=$(addsuffix .clean, $(SUBDIRS))
 SUBDIRSBUILD=$(addsuffix .build, $(SUBDIRS))
 

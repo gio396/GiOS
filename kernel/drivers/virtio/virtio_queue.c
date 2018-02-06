@@ -27,8 +27,8 @@ struct virtio_queue*
 virtio_create_queue(i8 *name, u32 len)
 {
   static u32 offset = 0;
-  struct virtio_queue *res = (struct virtio_queue*)malloc(sizeof(struct virtio_queue));
-  ZERO_STRUCT(res, struct virtio_queue);
+  struct virtio_queue *res = (struct virtio_queue*)kzmalloc(sizeof(struct virtio_queue));
+  LOG("start:%p end:%d\n", res, sizeof(struct virtio_queue));
 
   res -> name = name;
   res -> free_head = 0;
@@ -57,6 +57,8 @@ virtio_create_queue(i8 *name, u32 len)
   }
   res -> desc[len - 1].next = 0;
 
+  LOGV("%d", res -> size);
+
   return res;
 }
 
@@ -69,8 +71,7 @@ virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len)
 
   q -> desc[head].addr = (u64)((u32)buffer);
 
-  LOG("addr %p\n", q -> desc[head].addr);
-  q -> desc[head].len  = (u32)len + 1;
+  q -> desc[head].len  = (u32)len ;
 
   q -> free_head = q -> desc[head].next;
 
@@ -83,7 +84,7 @@ virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len)
 void
 virtio_queue_kick(struct virtio_queue *q, u16 iobase)
 {
-  q -> avail -> idx = (q -> avail -> idx + q -> num_added) % q -> size;
+  q -> avail -> idx = q -> avail -> idx + q -> num_added;
   q -> num_added = 0;
   u32 idx = q -> idx;
 
@@ -92,4 +93,20 @@ virtio_queue_kick(struct virtio_queue *q, u16 iobase)
     asm volatile("mfence" ::: "memory");
     virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_notify), (u8*)&idx);
   }
+}
+
+void
+virtq_assign_buffer(struct virtio_queue *q)
+{
+  u16 head = q -> free_head;
+
+  q -> desc[head].flags = 0;
+  q -> desc[head].addr = (size_t)kzmalloc(100);
+  q -> desc[head].len = 100;
+  q -> free_head = q -> desc[head].next;
+
+  u16 avail_idx = (q -> avail -> idx + q -> num_added) % q -> size;
+  q -> num_added++;
+
+  q -> avail -> ring[avail_idx] = head;
 }

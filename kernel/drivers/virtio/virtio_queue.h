@@ -58,4 +58,7 @@ virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len);
 void
 virtio_queue_kick(struct virtio_queue *q, u16 iobase);
 
+void
+virtq_assign_buffer(struct virtio_queue *q);
+
 #endif

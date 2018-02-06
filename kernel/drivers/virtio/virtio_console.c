@@ -3,6 +3,9 @@
 #include "virtio_queue.h"
 
 #include <arch/x86/framebuffer.h>
+#include <arch/x86/idt.h>
+
+#include <drivers/pci/pci.h>
 
 #include <macros.h>
 #include <list.h>
@@ -49,6 +52,11 @@ new_console(struct virtio_dev *vdev)
   return cdev;
 }
 
+void intr_handler()
+{
+
+}
+
 b8
 init_vdev_console(struct virtio_dev *vdev)
 {
@@ -82,7 +90,14 @@ init_vdev_console(struct virtio_dev *vdev)
     return 0;
   }
 
-  // virtio_add_status(iobase, VIRTIO_STATUS_FEATURES_OK);
+  virtio_read_config(cdev -> vdev, sizeof(struct virtio_console_config), (u8*)&cdev -> cfg);
+
+  LOGV("%d", cdev -> cfg.cols);
+  LOGV("%d", cdev -> cfg.rows);
+  LOGV("%d", cdev -> cfg.nr_ports);
+  LOGV("%d", cdev -> cfg.emerg_wr);
+
+  virtio_add_status(iobase, VIRTIO_STATUS_FEATURES_OK);
 
   virtio_set_queue(cdev -> vdev, 0, 
     virtio_create_queue("r0",  virtio_get_queue_size(cdev -> vdev, 0)));
@@ -93,12 +108,28 @@ init_vdev_console(struct virtio_dev *vdev)
   virtio_set_queue(cdev -> vdev, 3, 
     virtio_create_queue("ct0", virtio_get_queue_size(cdev -> vdev, 3)));
 
+  struct virtio_queue *q = virtio_get_queue(cdev -> vdev, 0);
+  virtq_assign_buffer(q);
+  virtio_dev_kick_queue(cdev -> vdev, q);
+
+  struct pci_dev *pdev = cdev -> vdev -> pci_dev;
+  if (pdev -> has_msix)
+  {
+    pci_msix_enable(pdev);
+    for (u32 i = 0; i < pdev -> msix.max_entries; i++)
+    {
+      u32 irq = get_next_irq();
+      subscribe_irq(irq, intr_handler);
+      msi_set_vector(&pdev -> msix, 0, irq);
+    }
+  }
+
   virtio_add_status(iobase, VIRTIO_STATUS_DRI_OK);
 
   while(1)
   {
-    vdev_console_write(cdev, 0, (u8*)"kata", 5);
-    sleep(2000);
+    vdev_console_write(cdev, 0, (u8*)"kata\n\r", 7);
+    sleep(100);
   }
 
   return 1;

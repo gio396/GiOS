@@ -29,11 +29,13 @@
 
 typedef void(*PROCIRQHandler)(const union biosregs *reg);
 
+void (*irq_handler_pointer)(const union biosregs *iregs) = NULL;
+
 global void *irq_handlers[] = 
 {
   0, 0, 0, 0, 0, 0, 0, 0, 
   0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0
+  0, 0, 0, 0, 0, 0, 0, 0,
 };
 
 
@@ -57,7 +59,7 @@ irq_common_handler(const union biosregs *reg)
   u32 irq_handler_index = reg->int_no - 32;
   PROCIRQHandler irq_handler = (PROCIRQHandler)irq_handlers[irq_handler_index];
 
-  if(irq_handler)
+  if (irq_handler)
   {
     irq_handler(reg);
   }
@@ -65,14 +67,26 @@ irq_common_handler(const union biosregs *reg)
   //TODO(GIO): write to apic EOI register only when APIC is available and enabled.
   //           otherwise set PIC EOI.
   
-  if (reg->int_no > 40)
+
+  irq_eoi(1, reg->int_no);
+
+  return;
+}
+
+void
+irq_eoi(b8 apic, i32 intno)
+{
+  if (intno > 40)
   {
-    outb(PIC2_CMD, EOI); //EOI slave
+    outb(PIC2_CMD, EOI);
   }
 
-  outb(PIC1_CMD, EOI); //EOI
+  outb(PIC1_CMD, EOI);
 
-  apic_write_reg(APIC_EOI_REGISTER, EOI);
+  if (apic)
+  {
+    apic_write_reg(APIC_EOI_REGISTER, 0);
+  }
 
   return;
 }

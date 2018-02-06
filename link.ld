@@ -31,6 +31,21 @@ SECTIONS
     l_edata = .;
   }
 
+  .user ALIGN (0x1000): AT(ADDR(.user) - 0xC0000000)
+  {
+    __l_init_core0_s = .;
+    LONG((__l_init_core0_e - __l_init_core0_s) / 4 - 2)
+    *(.cinit0)
+    LONG(0)
+    __l_init_core0_e = .;
+
+    __l_init_core1_s = .;
+    LONG((__l_init_core1_e - __l_init_core1_s) / 4 - 2)
+    *(.cinit1)
+    LONG(0)
+    __l_init_core1_e = .;
+  }
+
   /* Read-write data (uninitialized) and stack */
   .bss : AT(ADDR(.bss) - 0xC0000000)
   {
@@ -40,7 +55,4 @@ SECTIONS
     l_ebss = .;
     l_ekernel = .;
   }
-
-  /* The compiler may produce other sections, by default it will put them in
-     a segment with the same name. Simply add stuff here as needed. */
 }

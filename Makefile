@@ -1,7 +1,7 @@
 CC=gcc
 GDB=gdb
 
-CFLAGS= -m32 -O0 -ggdb -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding
+CFLAGS= -m32 -O0 -ggdb -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c -std=gnu99 -ffreestanding -Wno-unused-parameter
 BASEDIR=$(shell pwd)
 CINCLUDES=-I $(BASEDIR)/kernel/  -I $(BASEDIR)/libc/
 DEFINES=-D__GIOS_DEBUG__
@@ -50,7 +50,10 @@ os.iso: kernel.elf
 	# 						-o os.iso                       \
 	# 						iso
 
-QEMU_COMMON_FLAGS=-m 256 -cpu core2duo -smp 1 -device virtio-serial,id=nxtoolsBus0 -device virtserialport,chardev=nxtoolsChardev0,name=nxtools0,id=nxtoolsGuest0 -chardev socket,path=/tmp/nxsock1233,server,nowait,id=nxtoolsChardev0 -drive file=image_file.raw,if=virtio
+QEMU_COMMON_FLAGS=-m 256 -cpu core2duo -smp 1 -device virtio-serial,id=nxtoolsBus0 -device virtserialport,chardev=nxtoolsChardev0,name=nxtools0,id=nxtoolsGuest0 -chardev socket,path=/tmp/nxsock1233,server,nowait,id=nxtoolsChardev0 
+
+
+#-drive file=image_file.raw,if=virtio
 
 #FOR AHCI device use this!
 #-drive id=disk,file=image_file.raw,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0

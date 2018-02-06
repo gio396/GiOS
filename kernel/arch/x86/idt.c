@@ -6,6 +6,10 @@
 
 #include <string.h>
 
+typedef void(*PROCIRQHandler)(const union biosregs *reg);
+
+PROCIRQHandler irq_handlers[IDT_SIZE];
+
 #define def_isr(num) extern void isr##num(void)
 
 def_isr(0);
@@ -65,6 +69,7 @@ def_irq(15);
 #undef def_irq
 
 extern void irqTime(void);
+extern void irqHigh(void);
 
 #define SEG_PRES(x) ((x) << 0x07) // 1 present 0 not present
 #define SEG_PRIV(x) ((x) << 0x06) // privilage ring (0 - 3)
@@ -197,4 +202,28 @@ idt_common_handler(const union biosregs* ireg)
 
   //halt the system;
   halt();
+}
+
+u32
+get_next_irq()
+{
+  i32 it = 48;
+
+  for (; it < IDT_SIZE; it++)
+  {
+    if (idt[it].flags == 0 && idt[it].base_low == 0)
+      return it;
+  }
+
+  return it;
+}
+
+extern void (*irq_handler_pointer)(const union biosregs *iregs);
+
+void
+subscribe_irq(u32 irq, void* handler)
+{
+  LOG("irq = %d\n", irq);
+  idt_set_gate(irq, (size_t)irq_handler_pointer, 0x08, IDT_INTR_PL0);
+  irq_handlers[irq] = handler;
 }

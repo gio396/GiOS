@@ -35,5 +35,7 @@ disable_interrupts(void);
 void
 enable_interrupts(void);
 
+void
+irq_eoi(b8 apic, i32 intno);
 
 #endif
