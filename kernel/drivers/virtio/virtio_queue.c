@@ -28,7 +28,6 @@ virtio_create_queue(i8 *name, u32 len)
 {
   static u32 offset = 0;
   struct virtio_queue *res = (struct virtio_queue*)kzmalloc(sizeof(struct virtio_queue));
-  LOG("start:%p end:%d\n", res, sizeof(struct virtio_queue));
 
   res -> name = name;
   res -> free_head = 0;
@@ -38,8 +37,7 @@ virtio_create_queue(i8 *name, u32 len)
   u32 sz = virtq_size(len);
 
   void* buffer = (void*)(0x0e000000 + offset);
-  mmap((void*)(0x0e000000 + offset), sz, 0);
-  offset += sz;
+  mmap(buffer, sz, 0);
   memset(buffer, 0, sz);
 
   res -> desc = (struct virtq_desc*)(buffer);
@@ -49,6 +47,10 @@ virtio_create_queue(i8 *name, u32 len)
   assert1(ALIGNED(res -> desc, 16));
   assert1(ALIGNED(res -> avail, 2));
   assert1(ALIGNED(res -> used,  4));
+
+  LOGV("%p", res -> desc);
+  LOGV("%p", res -> avail);
+  LOGV("%p", res -> used);
 
   //TODO(gio:) chain all the values 
   for (u32 i = 0; i < len; i++)

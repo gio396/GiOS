@@ -6,9 +6,14 @@
 
 #include <string.h>
 
-typedef void(*PROCIRQHandler)(const union biosregs *reg);
+typedef void(*PROCIRQHandler)(const union biosregs *reg, void *data);
+struct irq_handler
+{
+  void *data;
+  PROCIRQHandler callback;
+};
 
-PROCIRQHandler irq_handlers[IDT_SIZE];
+struct irq_handler irq_handlers[IDT_SIZE];
 
 #define def_isr(num) extern void isr##num(void)
 
@@ -221,9 +226,17 @@ get_next_irq()
 extern void (*irq_handler_pointer)(const union biosregs *iregs);
 
 void
-subscribe_irq(u32 irq, void* handler)
+subscribe_irq(u32 irq, void *handler, void *data)
 {
   LOG("irq = %d\n", irq);
   idt_set_gate(irq, (size_t)irq_handler_pointer, 0x08, IDT_INTR_PL0);
-  irq_handlers[irq] = handler;
+
+  irq_handlers[irq].data = data;
+  irq_handlers[irq].callback = handler;
+}
+
+void
+idt_call_irq(u32 irq, const union biosregs *iregs)
+{
+  irq_handlers[irq].callback(iregs, irq_handlers[irq].data);
 }

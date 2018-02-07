@@ -11,6 +11,7 @@
 #include <list.h>
 #include <timer.h>
 #include <string.h>
+#include <memory.h>
 
 #define R0  0
 #define W0  1
@@ -19,19 +20,18 @@
 #define RN(n) (4 + (2 * ((n) - 1)))
 #define WN(n) (RN(n) + 1)
 
+#define VIRTIO_CONSOLE_F_SIZE          0
+#define VIRTIO_CONSOLE_F_MULTIPORT     1
+#define VIRTIO_CONSOLE_F_EMERG_WRITE   2
 
-#define VIRTIO_console_F_SIZE          0
-#define VIRTIO_console_F_MULTIPORT     1
-#define VIRTIO_console_F_EMERG_WRITE   2
-
-#define VIRTIO_console_DEVICE_READY    0
-#define VIRTIO_console_DEVICE_ADD      1
-#define VIRTIO_console_DEVICE_REMOVE   2
-#define VIRTIO_console_PORT_READY      3
-#define VIRTIO_console_console_PORT    4
-#define VIRTIO_console_RESIZE          5
-#define VIRTIO_console_PORT_OPEN       6
-#define VIRTIO_console_PORT_NAME       7
+#define VIRTIO_CONSOLE_DEVICE_READY    0
+#define VIRTIO_CONSOLE_DEVICE_ADD      1
+#define VIRTIO_CONSOLE_DEVICE_REMOVE   2
+#define VIRTIO_CONSOLE_PORT_READY      3
+#define VIRTIO_CONSOLE_CONSOLE_PORT    4
+#define VIRTIO_CONSOLE_RESIZE          5
+#define VIRTIO_CONSOLE_PORT_OPEN       6
+#define VIRTIO_CONSOLE_PORT_NAME       7
 
   
 #define CHECK_F(fin, feat)                                    \
@@ -40,99 +40,99 @@
         LOG(#feat " is%savailable\n", __avail ? " ":" NOT "); \
     }while(0)                                                 \
 
-u32 console_head = 0;
-struct virtio_console console_stack[16];
-
 struct virtio_console*
-new_console(struct virtio_dev *vdev)
+new_console_device(struct pci_dev *pdev)
 {
-  UNUSED(vdev);
-  struct virtio_console *cdev = &console_stack[console_head++];
-  cdev -> vdev = vdev;
+  struct virtio_console *cdev = (struct virtio_console*)kzmalloc(sizeof(struct virtio_console));
+
   return cdev;
 }
 
 void intr_handler()
 {
+  
+}
 
+struct virtio_console*
+vdev_to_cdev(struct virtio_dev *vdev)
+{
+  return CONTAINER_OF(vdev, struct virtio_console, vdev);
 }
 
 b8
-init_vdev_console(struct virtio_dev *vdev)
+console_features(struct virtio_dev *vdev, u32 features)
 {
-  UNUSED(vdev);
-  LOG("Initializing virtio console(console)\n");
-  struct virtio_console *cdev = new_console(vdev);
-  UNUSED(cdev);
+  LOG("Console got features %b\n", vdev -> features);
+  CHECK_F(features, VIRTIO_CONSOLE_F_SIZE);
+  CHECK_F(features, VIRTIO_CONSOLE_F_MULTIPORT);
+  CHECK_F(features, VIRTIO_CONSOLE_F_EMERG_WRITE);
 
-  u32 iobase = vdev -> iobase;
-  virtio_add_status(iobase, VIRTIO_STATUS_ACK);
-  virtio_add_status(iobase, VIRTIO_STATUS_DRI);
+  u32 mandatory_features = (1 << VIRTIO_CONSOLE_F_MULTIPORT);
 
-  u32 features = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
-  u32 features1;
+  return vdev_confirm_features(vdev, mandatory_features);
+}
 
-  LOG("Features = %b\n", features);
-  CHECK_F(features, VIRTIO_console_F_SIZE);
-  CHECK_F(features, VIRTIO_console_F_MULTIPORT);
-  CHECK_F(features, VIRTIO_console_F_EMERG_WRITE);
+b8
+console_setup(struct virtio_dev *vdev)
+{
+  struct virtio_console *cdev = vdev_to_cdev(vdev);
 
-  features |= (1 << VIRTIO_console_F_MULTIPORT);
-  virtio_header_set_dword(iobase, OFFSET_OF(struct virtio_header, guest_features), (u8*)&features);
-
-  features1 = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
-
-  if (features != features1)
-  {
-    LOG("Features nagotiation failed!\n");
-    virtio_add_status(iobase, VIRTIO_STATUS_FAILED);
-
-    return 0;
-  }
-
-  virtio_read_config(cdev -> vdev, sizeof(struct virtio_console_config), (u8*)&cdev -> cfg);
-
+  virtio_read_config(vdev, sizeof(struct virtio_console_config), (u8*)&cdev -> cfg);
   LOGV("%d", cdev -> cfg.cols);
   LOGV("%d", cdev -> cfg.rows);
   LOGV("%d", cdev -> cfg.nr_ports);
   LOGV("%d", cdev -> cfg.emerg_wr);
 
-  virtio_add_status(iobase, VIRTIO_STATUS_FEATURES_OK);
+  virtio_set_queue(&cdev -> vdev, 0, 
+    virtio_create_queue("r0",  virtio_get_queue_size(&cdev -> vdev, 0)));
+  virtio_set_queue(&cdev -> vdev, 1, 
+    virtio_create_queue("t0",  virtio_get_queue_size(&cdev -> vdev, 1)));
+  virtio_set_queue(&cdev -> vdev, 2, 
+    virtio_create_queue("cr0", virtio_get_queue_size(&cdev -> vdev, 2)));
+  virtio_set_queue(&cdev -> vdev, 3, 
+    virtio_create_queue("ct0", virtio_get_queue_size(&cdev -> vdev, 3)));
 
-  virtio_set_queue(cdev -> vdev, 0, 
-    virtio_create_queue("r0",  virtio_get_queue_size(cdev -> vdev, 0)));
-  virtio_set_queue(cdev -> vdev, 1, 
-    virtio_create_queue("t0",  virtio_get_queue_size(cdev -> vdev, 1)));
-  virtio_set_queue(cdev -> vdev, 2, 
-    virtio_create_queue("cr0", virtio_get_queue_size(cdev -> vdev, 2)));
-  virtio_set_queue(cdev -> vdev, 3, 
-    virtio_create_queue("ct0", virtio_get_queue_size(cdev -> vdev, 3)));
-
-  struct virtio_queue *q = virtio_get_queue(cdev -> vdev, 0);
-  virtq_assign_buffer(q);
-  virtio_dev_kick_queue(cdev -> vdev, q);
-
-  struct pci_dev *pdev = cdev -> vdev -> pci_dev;
-  if (pdev -> has_msix)
-  {
-    pci_msix_enable(pdev);
-    for (u32 i = 0; i < pdev -> msix.max_entries; i++)
-    {
-      u32 irq = get_next_irq();
-      subscribe_irq(irq, intr_handler);
-      msi_set_vector(&pdev -> msix, 0, irq);
-    }
-  }
-
-  virtio_add_status(iobase, VIRTIO_STATUS_DRI_OK);
-
-  while(1)
-  {
-    vdev_console_write(cdev, 0, (u8*)"kata\n\r", 7);
-    sleep(100);
-  }
+  // while(1)
+  // {
+  //   vdev_console_write(cdev, 0, (u8*)"kata\n\r", 7);
+  //   sleep(100);
+  // }
 
   return 1;
+}
+
+void
+console_remove(struct virtio_dev *vdev)
+{
+  struct virtio_console *cdev = vdev_to_cdev(vdev);
+  UNUSED(cdev);
+  //kfree(cdev);
+
+  return;
+}
+
+void
+console_interrupt(const union biosregs *iregs, struct virtio_dev *vdev)
+{
+  struct virtio_console *cdev = vdev_to_cdev(vdev);
+  LOG("INTERUPTING CONSOLE MFER! %p\n", cdev);
+}
+
+struct virtio_driver virtio_console_driver = {
+  .probe_features = console_features,
+  .setup = console_setup,
+  .ievent = console_interrupt,
+};
+
+
+struct virtio_dev*
+init_vdev_console(struct pci_dev *dev)
+{
+  LOG("Initializing virtio console(console)\n");
+  struct virtio_console *cdev = new_console_device(dev);
+
+  cdev -> vdev.driver = &virtio_console_driver;
+  return &cdev -> vdev;
 }
 
 void
@@ -144,8 +144,8 @@ vdev_console_write(struct virtio_console *cdev, u32 port, u8 *buffer, size_t len
     qidx = WN(port);
   }
 
-  struct virtio_queue *q = virtio_get_queue(cdev -> vdev, qidx);
+  struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, qidx);
   virtio_queue_enqueue(q, buffer, len);
-  virtio_dev_kick_queue(cdev -> vdev, q);
+  virtio_dev_kick_queue(&cdev -> vdev, q);
   LOG("USED IDX! %d\n", q -> used -> idx);
 }

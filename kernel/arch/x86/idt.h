@@ -2,6 +2,7 @@
 #define __IDT_H__
 
 #include "common.h"
+#include <arch/x86/register.h>
 
 #define IDT_SIZE 256
 
@@ -35,9 +36,10 @@ set_irq_gates();
 u32
 get_next_irq();
 
-
+void
+subscribe_irq(u32 irq, void *handler, void *data);
 
 void
-subscribe_irq(u32 irq, void* handler);
+idt_call_irq(u32 irq, const union biosregs *iregs); 
 
 #endif

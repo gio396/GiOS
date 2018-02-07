@@ -3,6 +3,8 @@
 #include <arch/x86/io.h>
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/page.h>
+#include <arch/x86/idt.h>
+
 #include <memory.h>
 
 #include <timer.h>
@@ -27,13 +29,14 @@ pci_append_bus(struct pci_bus *node, struct pci_bus *parrent)
   return node;
 }
 
-struct pci_dev*
-pci_append_device(struct pci_dev *dev, struct pci_bus *bus)
+void
+pci_register_device(struct pci_dev *dev)
 {
-  dlist_insert_tail(&bus -> devices, &dev -> self);
-
-  return dev;
+  LOGV("%p", dev);
+  bus_register_device(global_bus -> pci_device_bus, &dev -> device);
+  dlist_insert_tail(&dev -> bus -> devices, &dev -> self);
 }
+
 
 void
 check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_dev *ldev);
@@ -233,22 +236,137 @@ pci_dev_setup_msix(struct pci_dev *dev)
 }
 
 internal b8
-pci_find_driver(struct pci_driver **found, struct pci_dev *device)
+match_dri_dev(struct pci_driver *driver, struct pci_dev *dev)
 {
-  UNUSED(found);
-  UNUSED(device);
+  struct pci_id *it = driver -> id_list;
+
+  while (it -> vendor != 0 || it -> device != 0 || it -> subsystem != 0)
+  {
+    if (it -> vendor != PCI_VENDOR_ANY && it -> vendor != dev -> vendor_id)
+    {
+      goto next;
+    }
+
+    if (it -> device != PCI_DEVICE_ANY && it -> device != dev -> device_id)
+    {
+      goto next;
+    }
+
+    if (it -> subsystem != PCI_SUBSYSTEM_ANY && it -> subsystem != dev -> subsystem_id)
+    {
+      goto next;
+    }
+
+    if (it -> class != PCI_CLASS_ANY && it -> class != dev -> base_class)
+    {
+      goto next;
+    }
+
+    if (it -> sub_class != PCI_SUB_CLASS_ANY && it -> sub_class  != dev -> sub_class)
+    {
+      goto next;
+    }
+
+    if (it -> revision != PCI_REVISION_ANY  && it -> revision != dev -> revision)
+    {
+      goto next;
+    }
+
+    return 1;
+
+next:
+  it = it + 1;
+  }
 
   return 0;
+}
+
+internal b8
+pci_find_driver(struct pci_driver **found, struct pci_dev *dev)
+{
+  struct pci_driver *last = *found;
+  struct dlist_node *head = NULL;
+  struct dlist_node *it = NULL;
+
+  if (last == NULL)
+  {
+    head = global_bus -> pci_drivers.dlist_node;
+  }
+  else
+  {
+    head = last -> self.next;
+  }
+
+  FOR_EACH_LIST(it,head)
+  {
+    struct pci_driver *dri = CONTAINER_OF(it, struct pci_driver, self);
+    if (match_dri_dev(dri, dev))
+    {
+      *found = dri;
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+void
+pci_irq_handler(const union biosregs *iregs, struct pci_dev *dev)
+{
+  struct pci_driver *driver = dev -> driver;
+  driver -> ievent(iregs, dev);
+}
+
+internal b8
+pci_setup_msix(struct pci_dev *dev)
+{
+  for (u32 i = 0; i < dev -> msix.max_entries; i++)
+  {
+    u32 irq = get_next_irq();
+    subscribe_irq(irq, pci_irq_handler, dev);
+    msi_set_vector(&dev -> msix, 0, irq);
+  }
+
+  return 1;
 }
 
 internal b8
 driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
 {
   struct pci_dev *dev = *pdev;
-  UNUSED(dev);
-  UNUSED(driver);
+  if (!driver -> match(dev))
+  {
+    return 0;
+  }
 
-  return 0;
+  struct pci_dev *new_dev = driver -> init(dev);
+  if (new_dev == NULL)
+  {
+    return 0;
+  }
+
+  if (!driver -> probe(new_dev))
+  {
+    driver -> remove(new_dev);
+    return 0;
+  }
+
+  if (!driver -> setup(new_dev))
+  {
+    driver -> remove(new_dev);
+    return 0;
+  }
+
+  new_dev -> driver = driver;
+  *pdev = new_dev;
+
+  LOGV("%d", dev -> has_msix);
+  if (dev -> has_msix)
+  {
+    pci_setup_msix(new_dev);
+  }
+
+  return 1;
 }
 
 void
@@ -335,11 +453,19 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
   }
 
   struct pci_driver *driver = NULL;
+  struct pci_dev *new_device = ldev;
 
   while(pci_find_driver(&driver, ldev))
   {
-    if (driver_try_setup(driver, &ldev) != 0)
+    if (driver_try_setup(driver, &new_device) != 0)
       break;
+  }
+
+  if (new_device -> driver == NULL)
+  {
+    //No driver create pci_device store and register into the bus without driver;
+    new_device = (struct pci_dev*)kzmalloc(sizeof(struct pci_dev));
+    *new_device = *ldev;
   }
 
   //TODO(gio): Handle bus-bus bridges!
@@ -353,7 +479,10 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
   //   walk_bus(sbus, nbus);
   // }
 
-  //search for match in device bus.
+  LOGV("%p", new_device);
+  LOGV("%p", new_device -> vendor_id);
+  LOGV("%p", new_device -> bus);
+  pci_register_device(new_device);
 }
 
 void
@@ -370,7 +499,7 @@ print_pci(struct pci_bus *bus, i32 append)
   FOR_EACH_LIST(it, head)
   {
     struct pci_dev *dev = CONTAINER_OF(it, struct pci_dev, self);
-    LOG("->(0x%08x venodor:0x%4x device:0x%4x) 0x%02x%02x subsystem 0x%04x:", dev, dev -> vendor_id, dev -> device_id, dev -> base_class, dev -> sub_class, dev -> subsystem_id);
+    LOG("->(0x%p venodor:0x%4x device:0x%4x) 0x%02x%02x subsystem 0x%04x:", dev, dev -> vendor_id, dev -> device_id, dev -> base_class, dev -> sub_class, dev -> subsystem_id);
   }
 
   LOG("\n");
@@ -601,13 +730,6 @@ pci_register_driver(struct pci_driver *driver)
 
   struct dlist_root *root = &global_bus -> pci_drivers;
   dlist_insert_tail(root, &driver -> self);
-}
-
-void
-pci_register_device(struct pci_dev *dev)
-{
-  bus_register_device(global_bus -> pci_device_bus, &dev -> device);
-  dlist_insert_tail(&dev -> bus -> devices, &dev -> self);
 }
 
 void

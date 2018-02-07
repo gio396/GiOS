@@ -5,6 +5,8 @@
 #include <rbtree.h>
 #include <list.h>
 
+#include <arch/x86/register.h>
+
 #include <drivers/device/device.h>
 #include <drivers/device/device_bus.h>
 #include "pci_msi.h"
@@ -47,6 +49,9 @@
 #define PCI_VENDOR_ANY    0xffff
 #define PCI_DEVICE_ANY    0xffff
 #define PCI_SUBSYSTEM_ANY 0xffff
+#define PCI_SUB_CLASS_ANY  0xff
+#define PCI_CLASS_ANY     0xff
+#define PCI_REVISION_ANY  0xff
 
 struct pci_bus
 {
@@ -93,11 +98,13 @@ struct pci_dev
 
   u8 base_class;
   u8 sub_class;
+  u8 revision;
+
   u8 header_type;
   u8 capabilities;
   b8 has_msix;
+  b8 should_use_msix;
   u8 irq;
-  u8 revision;
 
   u32 BAR[6];
   struct pci_dev_resource resources[6];
@@ -116,6 +123,9 @@ struct pci_id
   u16 vendor;
   u16 device;
   u16 subsystem;
+  u8 class;
+  u8 sub_class;
+  u8 revision;
 };
 
 struct pci_driver
@@ -126,9 +136,11 @@ struct pci_driver
   struct pci_id *id_list;
 
   b8 (*match)(struct pci_dev *dev);
-  struct pci_dev* (*alloc)(struct pci_dev *dev);
+  struct pci_dev* (*init)(struct pci_dev *dev);
   b8 (*probe)(struct pci_dev *dev);
   b8 (*setup)(struct pci_dev *dev);
+  void (*remove)(struct pci_dev *dev);
+  void (*ievent)(const union biosregs *iregs, struct pci_dev *dev);
 
   struct dlist_node self;
 };

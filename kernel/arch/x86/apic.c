@@ -4,6 +4,7 @@
 #include <arch/x86/msr.h>
 #include <arch/x86/acpi.h>
 #include <arch/x86/irq.h>
+#include <arch/x86/idt.h>
 #include <arch/x86/pit.h>
 #include <arch/x86/io.h>
 
@@ -128,8 +129,16 @@ void
 apic_irq_handler(const union biosregs *iregs)
 {
   u8 vector = apic_read_isr();
-  UNUSED(iregs); UNUSED(vector);
-  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);  
+  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
+  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
+  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
+  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
+  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
+  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
+  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
+
+
+  idt_call_irq(vector, iregs);
 
   irq_eoi(1, vector);
 }

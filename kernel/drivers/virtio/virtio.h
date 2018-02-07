@@ -2,6 +2,7 @@
 #define __VIRTIO_H__
 
 #include <common.h>
+#include <drivers/pci/pci.h>
 
 #include "virtio_queue.h"
 
@@ -20,19 +21,25 @@
 #define VIRTIO_STATUS_FEATURES_OK 3
 #define VIRTIO_STATUS_FAILED      6
 
-
 struct virtio_dev
 {
-  u8 devce_type;
-  struct pci_dev *pci_dev;
+  struct pci_dev pdev;
 
+  u8 devce_type;
   u32 iobase;
   u32 features;
 
-  //TODO(gio): abbility to dynamicly add virtques.
-  //           needs generic malloc. 
-
+  //driver
+  struct virtio_driver *driver;
   struct virtio_queue *virtq[64];
+};
+
+struct virtio_driver
+{
+  b8 (*probe_features)(struct virtio_dev* vdev, u32 features);
+  b8 (*setup)(struct virtio_dev *dev);
+  void (*ievent)(const union biosregs *iregs, struct virtio_dev *dev);
+  void (*remove)(struct virtio_dev *dev);
 };
 
 struct virtio_cap
@@ -121,5 +128,8 @@ virtio_dev_kick_queue(struct virtio_dev *dec, struct virtio_queue *q);
 
 void
 virtio_read_config(struct virtio_dev *dev, size_t size, u8* buffer);
+
+b8
+vdev_confirm_features(struct virtio_dev *vdev, u32 features);
 
 #endif

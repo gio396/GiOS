@@ -182,8 +182,6 @@ mmap(void *paddr, u32 size, u8 flags)
   u32 page_count = (size + kb(4) - 1) / (kb(4));
   u32 pgindex = GET_VIRT_DIRECTORY_OFFSET(paddr);
 
-  LOG("%d %d\n", pgindex, page_count);
-
   if (page_directory_entry[pgindex] == 0)
   {
     void*  new_page_table = kalloc();

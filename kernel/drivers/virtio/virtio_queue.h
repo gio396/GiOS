@@ -37,16 +37,17 @@ struct virtq_used
 
 struct virtio_queue
 {
-  i8 *name;
   u32 idx;
 
-  struct virtq_desc  *desc;
-  struct virtq_avail *avail;
-  struct virtq_used  *used;
+  i8 *name;
 
   u16 free_head;
   u16 num_added;
   u16 size;
+
+  struct virtq_desc  *desc;
+  struct virtq_avail *avail;
+  struct virtq_used  *used;
 };
 
 struct virtio_queue*

@@ -115,10 +115,12 @@ kmain(u32 mboot_magic, struct multiboot_info *mboot_info)
 
   printk(&state, "CPU vendor: %s\n", buffer + 4);
 
+  //drivers_init should be here
   pci_init();
 
+  //driver bus registration should be here
   kinit_core0();
 
+  //NOTE(gio): maybe move to core1 init!
   pci_enum();
-  // virtio_install();
 }

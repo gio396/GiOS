@@ -7,16 +7,14 @@
 #include <arch/x86/io.h>
 #include <drivers/pci/pci.h>
 #include <arch/x86/framebuffer.h>
+#include <arch/x86/idt.h>
 #include <arch/x86/page.h>
   
 #define VIRTIO_SUBSYSTEM_NETWORK  1
 #define VIRTIO_SUBSYSTEM_BLOCK  2
-#define VIRTIO_SUBSYSTEM_CHARDEV  3
+#define VIRTIO_SUBSYSTEM_CONSOLE  3
 
 #include "virtio_console.h"
-
-__attribute__((section(".init0"))) u32 kata1 = 12;
-
 
 #define ERINIT -1
 
@@ -79,47 +77,11 @@ VIRTIO_HEADER_GET_GENERIC(8,  byte)
 VIRTIO_HEADER_GET_GENERIC(16, word)
 VIRTIO_HEADER_GET_GENERIC(32, dword)
 
-b8 
-virtio_probe(struct pci_dev *dev)
+struct virtio_dev *
+pdev_to_vdev(struct pci_dev *pdev)
 {
-  return 0;
+  return CONTAINER_OF(pdev, struct virtio_dev, pdev);
 }
-
-b8
-virtio_setup(struct pci_dev *dev)
-{
-  return 0;
-}
-
-b8
-virtio_match(struct pci_dev *dev)
-{
-  return 0;
-}
-
-struct pci_id id_list[] = {
-  {VIRTIO_VENDOR_ID, PCI_DEVICE_ANY, PCI_SUBSYSTEM_ANY},
-  {0, 0, 0}
-};
-
-struct pci_driver driver = {
-  .name = ".virtio_pci", 
-
-  .id_list = id_list,
-
-  .match = virtio_match,
-  .probe = virtio_probe, 
-  .setup = virtio_setup,
-};
-
-void
-virtio_driver_register()
-{
-  LOG("EXPORT!\n");
-  return;
-};
-
-INIT_CORE0_EXPORT(virtio_driver_register);
 
 void
 virtio_add_status(u32 iobase, u8 ns)
@@ -141,132 +103,6 @@ virtio_get_config(u32 iobase, u32 offset, u8 *buffer, size_t size)
   }
 }
 
-// u8
-// virtio_install()
-// {
-//   struct dlist_node *it = NULL;
-//   struct pci_dev *dev;
-
-//   it = pci_lookup_device_next(it, VIRTIO_VENDOR_ID, VIRTIO_CHAR_DEVICE_ID, VIRTIO_CHAR_DEVICE_SUBSYSTEM_ID);
-
-//   if (it == NULL)
-//   {
-//     return ERINIT;
-//   }
-
-//   dev = CONTAINER_OF(it, struct pci_dev, self);
-//   LOG("Found Valid virtio device!\n");
-//   LOG("Vendort id = 0x%04x\n", dev -> vendor_id);
-//   LOG("capabilities = 0x%02x\n", dev -> capabilities);
-
-//   u32 iobase = 0;
-
-//   iobase = pci_dev_get_iobase(dev);
-
-//   virtio_add_status(iobase, VIRTIO_STATUS_ACK);
-//   virtio_add_status(iobase, VIRTIO_STATUS_DRI);
-
-//   u32 features = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
-
-//   LOG("FEATURES = %08x!\n", features);
-
-//   CHECK_F(features, VIRTIO_CHARDEV_F_SIZE);
-//   CHECK_F(features, VIRTIO_CHARDEV_F_MULTIPORT);
-//   CHECK_F(features, VIRTIO_CHARDEV_F_EMERG_WRITE);
-
-//   virtio_header_set_dword(iobase, OFFSET_OF(struct virtio_header, guest_features), (u8*)&features);
-
-//   u32 features1 = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
-
-//   if (features == features1)
-//   {
-//     LOG("FEATURE NAGOTIATION SUCCSESS!\n");
-//   }
-//   else
-//   {
-//     return 0;
-//   }
-
-//   virtio_add_status(iobase, VIRTIO_STATUS_DRI_OK);
-
-//   u16 queue_size = virtio_header_get_word(iobase, OFFSET_OF(struct virtio_header, queue_size));
-
-//   LOG("QUEUE SIZE = %x\n", queue_size);
-
-//   struct virtio_chardev_header header = {};
-//   u32 offset = sizeof(struct virtio_header);
-
-//   if (dev -> msix != 0)
-//     offset += sizeof(struct virtio_msix_header);
-
-//   virtio_get_config(iobase, offset, (u8*)&header, sizeof(struct virtio_chardev_header));
-
-//   LOG("CHARDEV %u %u %u\n", header.rows, header.cols, header.max_n_ports);
-
-//   u32 zero = 0;
-//   virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_select), (u8*)&zero);
-//   u32 qaddr = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, queue_size));
-
-//   LOG("VIRTQUEUE SIZE %d\n", qaddr);
-
-//   return 1;
-// }
-
-void
-init_vdev_common(struct pci_dev *dev, struct virtio_dev *vdev)
-{
-  vdev -> iobase = pci_dev_get_iobase(dev);
-  vdev -> pci_dev = dev;
-}
-
-u8
-virtio_install()
-{
-  struct dlist_node *it = NULL;
-  struct pci_dev   *dev;
-
-  it = pci_lookup_device(it, VIRTIO_VENDOR_ID);
-
-  while (it != NULL)
-  {
-    dev = CONTAINER_OF(it, struct pci_dev, self);
-    if (dev -> device_id < 0x1000  && dev -> device_id > 0x1005)
-      goto nextl;
-
-    LOG("Got valid virtio device with vendor id 0x%04x and device id 0x%04x\n",
-       dev -> vendor_id, dev -> device_id);
-
-    struct virtio_dev *vdev = (struct virtio_dev*)kalloc();
-    init_vdev_common(dev, vdev);
-
-    switch (dev -> subsystem_id)
-    {
-      case VIRTIO_SUBSYSTEM_CHARDEV:
-      {
-        init_vdev_console(vdev);
-      }break;
-
-      case VIRTIO_SUBSYSTEM_BLOCK:
-      {
-      }break;
-
-      case VIRTIO_SUBSYSTEM_NETWORK:
-      {
-      }break;
-
-      default:
-      {
-        goto nextl;
-      }break;
-    }
-
-  nextl:
-    it = pci_lookup_device_next(it, VIRTIO_VENDOR_ID);
-  }
-
-  return 1;
-}
-
 void
 virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
 {
@@ -286,7 +122,7 @@ virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
     LOG("Successfully set virtq queue!\n");
   }
 
-  if (dev -> pci_dev -> msix.enabled)
+  if (dev -> pdev.msix.enabled)
   {
     virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, config_msix_vector), (u8*)&idx);
     virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_msix_vector), (u8*)&idx);
@@ -322,7 +158,7 @@ get_config_offset(struct virtio_dev *dev)
 {
   size_t offset = sizeof(struct virtio_header);
 
-  if (!dev -> pci_dev -> msix.enabled)
+  if (!dev -> pdev.msix.enabled)
     offset -= VIRTIO_MSIX_HEADER_SIZE;
 
   return offset;
@@ -339,3 +175,133 @@ virtio_read_config(struct virtio_dev *dev, size_t size, u8* buffer)
     buffer[i] = virtio_header_get_byte(iobase, offset  + i);
   }
 }
+
+b8
+vdev_confirm_features(struct virtio_dev *vdev, u32 features)
+{
+  u32 iobase = vdev -> iobase;
+  virtio_header_set_dword(iobase, OFFSET_OF(struct virtio_header, guest_features), (u8*)&features);
+
+  u32 features1 = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
+
+  return ((features & features1) == features);
+}
+
+u32
+virtio_get_features(struct virtio_dev *vdev)
+{
+  u32 iobase = vdev -> iobase;
+  return virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
+}
+
+
+b8 
+virtio_probe(struct pci_dev *dev)
+{
+  struct virtio_dev *vdev = pdev_to_vdev(dev);
+  u32 iobase = vdev -> iobase;
+
+  virtio_add_status(iobase, VIRTIO_STATUS_ACK);
+  virtio_add_status(iobase, VIRTIO_STATUS_DRI);
+
+  u32 features = virtio_get_features(vdev);
+
+  struct virtio_driver *vdri = vdev -> driver;
+
+  if (vdri -> probe_features(vdev, features) == 0)
+    goto features_fail;
+
+
+  virtio_add_status(iobase, VIRTIO_STATUS_FEATURES_OK);
+
+  return 1;
+
+features_fail:
+  virtio_add_status(iobase, VIRTIO_STATUS_FAILED);
+  return 0;
+}
+
+b8
+virtio_setup(struct pci_dev *dev)
+{
+  struct virtio_dev *vdev = pdev_to_vdev(dev);
+  struct virtio_driver *vdri = vdev -> driver;
+
+  return vdri -> setup(vdev);
+}
+
+b8
+virtio_match(struct pci_dev *dev)
+{
+  //TODO(gio)
+  return 1;
+}
+
+void
+init_vdev_common(struct pci_dev *pdev, struct virtio_dev *vdev)
+{
+  vdev -> pdev = *pdev;
+  vdev -> iobase = pci_dev_get_iobase(&vdev -> pdev);
+}
+
+struct pci_dev*
+virtio_init(struct pci_dev *dev)
+{
+  struct virtio_dev *vdev;
+  switch (dev -> subsystem_id)
+  {
+    case VIRTIO_SUBSYSTEM_CONSOLE:
+    {
+      vdev = init_vdev_console(dev);
+    }break;
+
+    default:
+      return NULL;
+  }
+
+  init_vdev_common(dev, vdev);
+  return &vdev -> pdev;
+}
+
+void
+virtio_remove(struct pci_dev *dev)
+{
+  struct virtio_dev *vdev = pdev_to_vdev(dev);
+  struct virtio_driver *vdri = vdev -> driver;
+  vdri -> remove(vdev);
+}
+
+void
+virtio_interrupt(const union biosregs *iregs, struct pci_dev *dev)
+{
+  struct virtio_dev *vdev = pdev_to_vdev(dev);
+  struct virtio_driver *vdri = vdev -> driver;
+
+  vdri -> ievent(iregs, vdev);
+}
+
+struct pci_id id_list[] = {
+  {VIRTIO_VENDOR_ID, PCI_DEVICE_ANY, PCI_SUBSYSTEM_ANY, PCI_CLASS_ANY, PCI_SUB_CLASS_ANY, PCI_REVISION_ANY},
+  {0, 0, 0, 0, 0, 0}
+};
+
+struct pci_driver virtio_pci_driver = {
+  .name = ".virtio_pci", 
+  .id_list = id_list,
+
+  .match = virtio_match,
+  .init  = virtio_init,
+  .probe = virtio_probe, 
+  .setup = virtio_setup,
+  .remove = virtio_remove,
+  .ievent = virtio_interrupt,
+};
+
+void
+virtio_driver_register()
+{
+  pci_register_driver(&virtio_pci_driver);
+  return;
+};
+
+INIT_CORE0_EXPORT(virtio_driver_register);
