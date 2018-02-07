@@ -129,14 +129,6 @@ void
 apic_irq_handler(const union biosregs *iregs)
 {
   u8 vector = apic_read_isr();
-  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
-  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
-  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
-  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
-  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
-  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
-  LOG("RESIEVED INTERRUPT VECTOR = %d\n", vector);
-
 
   idt_call_irq(vector, iregs);
 
