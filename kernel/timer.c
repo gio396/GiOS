@@ -12,7 +12,7 @@
 
 #define MAX_TIMERS  4096 / sizeof(struct timer_list_entry)
 #define BITMAP_SIZE MAX_TIMERS >> 2
-
+  
 #ifdef __GIOS_DEBUG__
 #undef __GIOS_DEBUG__
 #endif
@@ -269,7 +269,6 @@ wakeup_callback(u32 val)
 {
   wakeup_flag = val;
 }
-
 
 void
 sleep(i32 ms)

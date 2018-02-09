@@ -18,6 +18,8 @@
 
 #define MSG_CTRL_MASK_BIT (1 << 14)
 
+#define PCI_MCTRL_BUS_MASTER (1 << 2)
+
 struct pci_bus *global_bus;
 
 struct pci_bus*
@@ -218,10 +220,12 @@ pci_dev_setup_msix(struct pci_dev *dev)
   dev -> msix.max_entries = max_entries;
   dev -> msix.per_vector_masking = (mctrl >> 8) & 0x1;
   dev -> msix.big_addr  = (mctrl >> 7) & 0x1;
-  dev -> msix.table_addr = (u32*)(dev -> resources[toff_bar].start + (toff & (~0x07)));
-  dev -> msix.pba_addr = (u32*)(dev -> resources[pbaoff_bar].start + (pbaoff & (~0x07)));
-  dev -> msix.enabled = (mctrl >> 15) & 0x1;
+  dev -> msix.table_addr = (u32*)(pci_resource_get_base(dev, toff_bar) + (toff & (~0x07)));
+  dev -> msix.pba_addr = (u32*)(pci_resource_get_base(dev, pbaoff_bar) + (pbaoff & (~0x07)));
+  dev -> msix.enabled = 1;//(mctrl >> 15) & 0x1;
+  dev -> msix.function_mask = (mctrl >> 14) & 1;
 
+  LOG("MASKED = %d\n", dev -> msix.function_mask);
   LOG("ENABLED = %d\n", dev -> msix.enabled);
 
   if (dev -> msix.enabled)
@@ -233,6 +237,9 @@ pci_dev_setup_msix(struct pci_dev *dev)
   LOGV("%p", dev -> msix.table_addr);
   LOGV("%p", dev -> msix.pba_addr);
   LOGV("%02x", dev -> msix.max_entries);
+
+  mctrl = (mctrl & ~(1 << 14));
+  pci_dev_write_config_word(dev, pos + OFFSET_OF(struct msix_capability_header, message_controll), mctrl);
 }
 
 internal b8
@@ -361,7 +368,7 @@ driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
   *pdev = new_dev;
 
   LOGV("%d", dev -> has_msix);
-  if (dev -> has_msix)
+  if (dev -> has_msix && dev -> msix.enabled)
   {
     pci_setup_msix(new_dev);
   }
@@ -392,11 +399,13 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
   cmd = pci_config_read_dword(bus, device, function, PCI_CMD_REG_OFFSET);
 
   cmd |= PCI_COMMAND_MASTER | PCI_COMMAND_MEM | PCI_COMMAND_IO;
+  cmd &= ~(PCI_INTERRUPT_ENABLE);
 
   pci_config_write_dword(bus, device, function, PCI_CMD_REG_OFFSET, cmd);
 
   cmd = pci_config_read_dword(bus, device, function, PCI_CMD_REG_OFFSET);
 
+  LOGV("PCI %p", cmd);
   LOG("Vendor id 0x%04x\n", vendor_id);
   LOG("Device id 0x%04x\n", device_id);
   LOG("Class base 0x%0x\nclass sub 0x%0x\n", base_class, sub_class);
@@ -659,6 +668,7 @@ pci_find_cap_next_ttl(u8 bus, u8 device, u8 function, i32 pos, u8 cap, i32 *ttl)
     if (id == 0xff)
       break;
 
+    LOG("ID = %p\n", id);
     if (id == cap)
       return pos;
 
@@ -738,4 +748,13 @@ pci_init()
   global_bus = (struct pci_bus* )kzmalloc(sizeof(struct pci_bus));
 
   global_bus -> pci_device_bus = register_device_bus("pci_bus");
+}
+
+u16
+pci_get_status(struct pci_dev *dev)
+{
+  u16 status;
+  pci_dev_read_config_word(dev, PCI_STATUS_OFFSET, &status);
+
+  return status;
 }

@@ -33,6 +33,13 @@
 #define VIRTIO_CONSOLE_PORT_OPEN       6
 #define VIRTIO_CONSOLE_PORT_NAME       7
 
+struct virtio_console_control
+{
+  u32 id;
+  u16 event;
+  u16 value;
+};
+
   
 #define CHECK_F(fin, feat)                                    \
     do{                                                       \
@@ -72,6 +79,55 @@ console_features(struct virtio_dev *vdev, u32 features)
   return vdev_confirm_features(vdev, mandatory_features);
 }
 
+void
+write_later(u32 addr)
+{
+  struct virtio_console *cdev = (struct virtio_console*)(addr);
+  vdev_console_write(cdev, 0, (u8*)"kata\r\n", 7);
+
+  struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, 2);
+  LOGV("%d", q -> used -> idx);
+  LOGV("%d", q -> avail -> idx);
+}
+
+void
+setup_rx(struct virtio_console *cdev, u32 vqid)
+{
+  struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, vqid);
+  u32 head = q -> free_head;
+
+  LOGV("%d", head);
+  LOGV("%p", q -> desc);
+
+  q -> desc[head].addr = (u32)kzmalloc(0x400);
+  q -> desc[head].len  = 0x400;
+  q -> desc[head].flags = 0;
+  q -> free_head = q -> desc[head].next;
+
+  q -> avail -> ring[(q -> avail -> idx + q -> num_added) % q -> size] = head;
+  q -> num_added++;
+
+  u32 iobase = cdev -> vdev.iobase;
+  virtio_queue_notify(q, iobase);
+
+  LOGV("%p", q -> avail -> flags);
+}
+
+void
+console_send_control_message(struct virtio_console *cdev, u32 id, u16 event, u16 value)
+{
+  struct virtio_console_control *ctrl = (struct virtio_console_control*)kzmalloc(sizeof(struct virtio_console_control));
+
+  ctrl -> id = id;
+  ctrl -> event = event;
+  ctrl -> value = value;
+
+  struct virtio_queue *vq = virtio_get_queue(&cdev -> vdev, 3);
+  virtio_queue_enqueue(vq, (u8*)ctrl, sizeof(struct virtio_console_control));
+  virtio_dev_kick_queue(&cdev -> vdev, vq);
+  LOG("USED IDX! %d\n", vq -> used -> idx);
+}
+
 b8
 console_setup(struct virtio_dev *vdev)
 {
@@ -92,11 +148,16 @@ console_setup(struct virtio_dev *vdev)
   virtio_set_queue(&cdev -> vdev, 3, 
     virtio_create_queue("ct0", virtio_get_queue_size(&cdev -> vdev, 3)));
 
-  // while(1)
-  // {
-  //   vdev_console_write(cdev, 0, (u8*)"kata\n\r", 7);
-  //   sleep(100);
-  // }
+  setup_rx(cdev, 0);
+  setup_rx(cdev, 2);
+
+  console_send_control_message(cdev, 0xffffffff, VIRTIO_CONSOLE_DEVICE_READY, 1);
+
+
+  new_timer(5 * 1000 * 1000, write_later, (u32)cdev);
+  new_timer(6 * 1000 * 1000, write_later, (u32)cdev);
+  new_timer(7 * 1000 * 1000, write_later, (u32)cdev);
+  new_timer(8 * 1000 * 1000, write_later, (u32)cdev);
 
   return 1;
 }
@@ -115,7 +176,7 @@ void
 console_interrupt(const union biosregs *iregs, struct virtio_dev *vdev)
 {
   struct virtio_console *cdev = vdev_to_cdev(vdev);
-  LOG("INTERUPTING CONSOLE MFER! %p\n", cdev);
+  LOG("INTERUPTING CONSOLE! %p\n", cdev);
 }
 
 struct virtio_driver virtio_console_driver = {
@@ -148,4 +209,8 @@ vdev_console_write(struct virtio_console *cdev, u32 port, u8 *buffer, size_t len
   virtio_queue_enqueue(q, buffer, len);
   virtio_dev_kick_queue(&cdev -> vdev, q);
   LOG("USED IDX! %d\n", q -> used -> idx);
+
+  q = virtio_get_queue(&cdev -> vdev, 2);
+  u16 status = pci_get_status(&cdev -> vdev.pdev);
+  LOG("STATUS = %016b\n", status);
 }

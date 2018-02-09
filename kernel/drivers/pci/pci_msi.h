@@ -6,6 +6,7 @@
 struct msix
 {
   u8  enabled;
+  u8  function_mask;
   u32 cap_base;
 
   u32 max_entries;

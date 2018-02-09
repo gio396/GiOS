@@ -38,9 +38,10 @@
 #define PCI_MSI_CAP                    0x05
 #define PCI_MSIX_CAP                   0x11
 
-#define PCI_COMMAND_MASTER 0x04
-#define PCI_COMMAND_MEM    0x02
-#define PCI_COMMAND_IO     0x01
+#define PCI_INTERRUPT_ENABLE 0x400
+#define PCI_COMMAND_MASTER   0x04
+#define PCI_COMMAND_MEM      0x02
+#define PCI_COMMAND_IO       0x01
 
 #define UNIQUE(in) __UNIQ__##in##__##__COUNTER__
 #define INIT_CORE_EXPORT(coreid, func) __attribute__((section(".cinit" #coreid))) void* UNIQUE(func) = (void*)func
@@ -187,5 +188,8 @@ pci_msix_enable(struct pci_dev *dev);
 
 void
 pci_register_driver(struct pci_driver *driver);
+
+u16
+pci_get_status(struct pci_dev *dev);
 
 #endif

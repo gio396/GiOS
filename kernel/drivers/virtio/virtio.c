@@ -87,9 +87,13 @@ void
 virtio_add_status(u32 iobase, u8 ns)
 {
   u32 status = virtio_header_get_byte(iobase, OFFSET_OF(struct virtio_header, device_status)) & 0xff;
+
   status |= (1 << ns);
+
   virtio_header_set_byte(iobase, OFFSET_OF(struct virtio_header, device_status), (u8*)&status);
+
   status = virtio_header_get_byte(iobase, OFFSET_OF(struct virtio_header, device_status)) & 0xff;
+
   LOG("STATUS %02x!\n", status);
 }
 
@@ -211,8 +215,8 @@ virtio_probe(struct pci_dev *dev)
   if (vdri -> probe_features(vdev, features) == 0)
     goto features_fail;
 
-
-  virtio_add_status(iobase, VIRTIO_STATUS_FEATURES_OK);
+  // skip this step for legacy drivers.
+  // virtio_add_status(iobase, VIRTIO_STATUS_FEATURES_OK);
 
   return 1;
 
@@ -227,7 +231,14 @@ virtio_setup(struct pci_dev *dev)
   struct virtio_dev *vdev = pdev_to_vdev(dev);
   struct virtio_driver *vdri = vdev -> driver;
 
-  return vdri -> setup(vdev);
+  b8 dri_status = vdri -> setup(vdev);
+  if (dri_status)
+  {
+    u32 iobase = vdev -> iobase;
+    virtio_add_status(iobase, VIRTIO_STATUS_DRI_OK);
+  }
+
+  return dri_status;
 }
 
 b8

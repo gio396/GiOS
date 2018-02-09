@@ -24,7 +24,7 @@ msi_mm_write(u32 reg, u32 val)
 size_t
 msi_get_table_reg(struct msix *msix, u32 vec, u32 offset)
 {
-  size_t res = (size_t)msix -> table_addr + vec * sizeof(struct msix_table_entry) + offset;
+  size_t res = (size_t)(msix -> table_addr) + vec * sizeof(struct msix_table_entry) + offset;
 
   return res;
 }
