@@ -320,8 +320,11 @@ pci_find_driver(struct pci_driver **found, struct pci_dev *dev)
 void
 pci_irq_handler(const union biosregs *iregs, struct pci_dev *dev)
 {
+  LOG("PCI_IRQ_HANDLER!");
+  return;
   struct pci_driver *driver = dev -> driver;
-  driver -> ievent(iregs, dev);
+  if (driver && driver -> ievent)
+    driver -> ievent(iregs, dev);
 }
 
 internal b8
@@ -358,6 +361,12 @@ driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
     return 0;
   }
 
+  LOGV("%d", dev -> has_msix);
+  if (dev -> has_msix && dev -> msix.enabled)
+  {
+    pci_setup_msix(new_dev);
+  }
+
   if (!driver -> setup(new_dev))
   {
     driver -> remove(new_dev);
@@ -366,12 +375,6 @@ driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
 
   new_dev -> driver = driver;
   *pdev = new_dev;
-
-  LOGV("%d", dev -> has_msix);
-  if (dev -> has_msix && dev -> msix.enabled)
-  {
-    pci_setup_msix(new_dev);
-  }
 
   return 1;
 }

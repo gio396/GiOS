@@ -131,3 +131,23 @@ kzmalloc(size_t size)
 
   return ptr;
 }
+
+
+u64
+tbeqw(u64 val)
+{
+
+  return 0;
+}
+
+u32
+tbedw(u32 val)
+{
+  return (((val>>24) & 0x000000ff) | ((val>>8) & 0x0000ff00) | ((val<<8) & 0x00ff0000) | ((val<<24) & 0xff000000));
+}
+
+u16
+tbew(u16 val)
+{
+  return ((val >> 8) & 0x00ff) | ((val << 8) | 0xff00);
+}

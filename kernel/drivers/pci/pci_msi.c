@@ -92,5 +92,4 @@ msi_set_vector(struct msix* msix, u32 cpu, u32 intr)
     return;
 
   msi_redirect_vector(msix, vec, cpu, intr);
-
 }

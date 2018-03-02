@@ -1,9 +1,11 @@
 #include "rbtree.h"
 
+#include <string.h>
+
 void
 rbtree_insert(struct rb_root *root, struct rb_node *node)
 {
-  struct rb_node *parent = RB_PARENT(node), *gparent, *tmp;
+  struct rb_node *parent = RB_GET_PARENT(node), *gparent, *tmp;
 
   while (1)
   {
@@ -13,10 +15,10 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
        *  n is root
        */
       //case 1
-      node -> color = RB_BLACK;
+      RB_SET_COLOR(node, RB_BLACK);
       break;
     } 
-    else if (parent -> color == RB_BLACK)
+    else if (RB_GET_COLOR(parent) == RB_BLACK)
     {
       /*
        *  P
@@ -27,12 +29,12 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
       break;
     }
 
-    gparent = RB_PARENT(parent);
+    gparent = RB_GET_PARENT(parent);
 
     tmp = gparent -> right;
     if (parent != tmp)
     {
-      if (tmp && tmp -> color == RB_RED)
+      if (tmp && RB_GET_COLOR(tmp) == RB_RED)
       {
         /*
          *     G         g
@@ -44,12 +46,12 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
          *
          */
         //case 3
-        tmp -> color = RB_BLACK;
-        parent -> color = RB_BLACK;
-        node -> color = RB_RED;
+        RB_SET_COLOR(tmp, RB_BLACK);
+        RB_SET_COLOR(parent, RB_BLACK);
+        RB_SET_COLOR(gparent, RB_RED);
 
         node = gparent;
-        parent = RB_PARENT(node);
+        parent = RB_GET_PARENT(node);
 
         continue;
       }
@@ -73,14 +75,14 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
 
         if (tmp)
         {
-          tmp -> parent = parent;
+          RB_SET_PARENT(tmp, parent);
         }
 
-        parent -> parent = node;
+        RB_SET_PARENT(parent, node);
         parent = node;
         //???
         gparent -> left = node;
-        node -> parent = gparent;
+        RB_SET_PARENT(node, gparent);
         tmp = parent -> right;
       }
 
@@ -98,14 +100,15 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
 
       if (tmp)
       {
-        tmp -> parent = gparent;
+        RB_SET_PARENT(tmp, gparent);
       }
-      parent -> color = RB_BLACK;
-      gparent -> color = RB_RED;
+      
+      RB_SET_COLOR(parent, RB_BLACK);
+      RB_SET_COLOR(gparent, RB_RED);
 
-      struct rb_node *old = gparent -> parent;
-      gparent -> parent = parent;
-      parent -> parent = old;
+      struct rb_node *old = RB_GET_PARENT(gparent);
+      RB_SET_PARENT(gparent, parent);
+      RB_SET_PARENT(parent, old);
       if (old)
       {
         if (old -> left == gparent)
@@ -122,7 +125,7 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
     else
     {
       tmp = gparent -> left;
-      if (tmp && tmp -> color == RB_RED)
+      if (tmp && RB_GET_COLOR(tmp) == RB_RED)
       {
        /*
         *   G         g
@@ -134,11 +137,11 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
         *
         */
         //case 3
-        tmp -> color = RB_BLACK;
-        parent -> color = RB_BLACK;
-        gparent -> color = RB_RED;
+        RB_SET_COLOR(tmp, RB_BLACK);
+        RB_SET_COLOR(parent, RB_BLACK);
+        RB_SET_COLOR(gparent, RB_RED);
         node = gparent;
-        parent = RB_PARENT(node);
+        parent = RB_GET_PARENT(node);
 
         continue;
       }
@@ -162,14 +165,14 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
 
         if (tmp)
         {
-          tmp -> parent = parent;
+          RB_SET_PARENT(tmp, parent);
         }
 
-        parent -> parent = node;
+        RB_SET_PARENT(parent, node);
         parent = node;
         //???
         gparent -> right = node;
-        node -> parent = gparent;
+        RB_SET_PARENT(node, gparent);
         tmp = parent -> left;
       }
 
@@ -187,15 +190,15 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
 
       if (tmp)
       {
-        tmp -> parent = gparent;
+        RB_SET_PARENT(tmp, gparent);
       }
 
-      parent -> color = RB_BLACK;
-      gparent -> color = RB_RED;
+      RB_SET_COLOR(parent, RB_BLACK);
+      RB_SET_COLOR(gparent, RB_RED);
 
-      struct rb_node *old = gparent -> parent;
-      gparent -> parent = parent;
-      parent -> parent = old;
+      struct rb_node *old = RB_GET_PARENT(gparent);
+      RB_SET_PARENT(gparent, parent);
+      RB_SET_PARENT(parent, old);
       if (old)
       {
         if (old -> left == gparent)
@@ -213,11 +216,10 @@ rbtree_insert(struct rb_root *root, struct rb_node *node)
 }
 
 void
-rb_link_node(struct rb_node *new, struct rb_node *parent, struct rb_node **link);
+rb_link_node(struct rb_node *new, struct rb_node *parent, struct rb_node **link)
 {
-  new -> parent = parent;
   *link = new;
 
-  new -> color = RB_RED;
-  new -> left = new -> right = NULL;
+  ZERO_STRUCT(new, struct rb_node);
+  RB_SET_PARENT_COLOR(new, parent, RB_RED);
 }

@@ -12,4 +12,13 @@ kmalloc(size_t size);
 void*
 kzmalloc(size_t size);
 
+u64
+tbeqw(u64 val);
+
+u32
+tbedw(u32 val);
+
+u16
+tbew(u16 val);
+
 #endif

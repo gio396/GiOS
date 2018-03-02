@@ -83,9 +83,9 @@ void
 write_later(u32 addr)
 {
   struct virtio_console *cdev = (struct virtio_console*)(addr);
-  vdev_console_write(cdev, 0, (u8*)"kata\r\n", 7);
+  vdev_console_write(cdev, 0, (u8*)"kataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\r\n", 64);
 
-  struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, 2);
+  struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, 3);
   LOGV("%d", q -> used -> idx);
   LOGV("%d", q -> avail -> idx);
 }
@@ -107,8 +107,8 @@ setup_rx(struct virtio_console *cdev, u32 vqid)
   q -> avail -> ring[(q -> avail -> idx + q -> num_added) % q -> size] = head;
   q -> num_added++;
 
-  u32 iobase = cdev -> vdev.iobase;
-  virtio_queue_notify(q, iobase);
+  // u32 iobase = cdev -> vdev.iobase;
+  // virtio_queue_notify(q, iobase);
 
   LOGV("%p", q -> avail -> flags);
 }
@@ -125,7 +125,6 @@ console_send_control_message(struct virtio_console *cdev, u32 id, u16 event, u16
   struct virtio_queue *vq = virtio_get_queue(&cdev -> vdev, 3);
   virtio_queue_enqueue(vq, (u8*)ctrl, sizeof(struct virtio_console_control));
   virtio_dev_kick_queue(&cdev -> vdev, vq);
-  LOG("USED IDX! %d\n", vq -> used -> idx);
 }
 
 b8
@@ -152,12 +151,8 @@ console_setup(struct virtio_dev *vdev)
   setup_rx(cdev, 2);
 
   console_send_control_message(cdev, 0xffffffff, VIRTIO_CONSOLE_DEVICE_READY, 1);
-
-
+  
   new_timer(5 * 1000 * 1000, write_later, (u32)cdev);
-  new_timer(6 * 1000 * 1000, write_later, (u32)cdev);
-  new_timer(7 * 1000 * 1000, write_later, (u32)cdev);
-  new_timer(8 * 1000 * 1000, write_later, (u32)cdev);
 
   return 1;
 }

@@ -1,5 +1,5 @@
 OBJS= \
-	string.o list.o
+	string.o list.o rbtree.o
 
 all: $(SUBDIRS) $(OBJS)
 	cp *.o $(BUILD_ROOT)/OBJS

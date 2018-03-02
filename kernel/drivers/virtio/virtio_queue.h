@@ -41,6 +41,10 @@ struct virtio_queue
 
   i8 *name;
 
+  u16 last_index_used;
+  u16 last_available_index;
+  u32 chunk_size;
+  u16 next_buffer;
   u16 free_head;
   u16 num_added;
   u16 size;

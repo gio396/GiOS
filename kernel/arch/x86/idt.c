@@ -203,7 +203,7 @@ const char* idt_error_desc[] =
 void 
 idt_common_handler(const union biosregs* ireg)
 {
-  printk(&state, "Encountered %s halting..\n", idt_error_desc[ireg->int_no]);
+  printk(&state, "Encountered %s halting..\n", idt_error_desc[ireg->int_no - 1]);
 
   //halt the system;
   halt();
