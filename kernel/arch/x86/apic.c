@@ -59,6 +59,7 @@ global i32 apic_tick_count = 1;
 
 extern void (*irq_handler_pointer)(const union biosregs *iregs);
 
+extern void new_irq_handler();
 
 global struct 
 {
@@ -128,6 +129,7 @@ apic_read_isr()
 void
 apic_irq_handler(const union biosregs *iregs)
 {
+  LOGV("%p", iregs);
   u8 vector = apic_read_isr();
 
   idt_call_irq(vector, iregs);

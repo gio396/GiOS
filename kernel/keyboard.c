@@ -91,7 +91,7 @@ unsigned char skbdlt[128] =
 u32 shift_make = 0;
 
 internal void
-keyboard_handler(/*const union biosregs *ireg*/)
+keyboard_handler(const union biosregs *iregs)
 {
   u8 scancode;
 

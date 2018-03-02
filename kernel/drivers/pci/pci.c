@@ -320,8 +320,7 @@ pci_find_driver(struct pci_driver **found, struct pci_dev *dev)
 void
 pci_irq_handler(const union biosregs *iregs, struct pci_dev *dev)
 {
-  LOG("PCI_IRQ_HANDLER!");
-  return;
+  LOG("PCI_IRQ_HANDLER!\n");
   struct pci_driver *driver = dev -> driver;
   if (driver && driver -> ievent)
     driver -> ievent(iregs, dev);
@@ -350,6 +349,8 @@ driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
   }
 
   struct pci_dev *new_dev = driver -> init(dev);
+  new_dev -> driver = driver;
+  
   if (new_dev == NULL)
   {
     return 0;
@@ -373,7 +374,6 @@ driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
     return 0;
   }
 
-  new_dev -> driver = driver;
   *pdev = new_dev;
 
   return 1;

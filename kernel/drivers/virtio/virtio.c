@@ -128,8 +128,14 @@ virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
 
   if (dev -> pdev.msix.enabled)
   {
-    virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, config_msix_vector), (u8*)&idx);
-    virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_msix_vector), (u8*)&idx);
+    LOGV("%d", idx);
+
+    u16 vector = 0;
+    virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, config_msix_vector), (u8*)&vector);
+
+    vector = 1;
+    virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_msix_vector), (u8*)&vector);
+
   }
 }
 
@@ -180,6 +186,17 @@ virtio_read_config(struct virtio_dev *dev, size_t size, u8* buffer)
   }
 }
 
+u8
+virtio_get_isr(struct virtio_dev *dev)
+{
+  u8 isr;
+  u32 iobase = dev -> iobase;
+
+  isr = virtio_header_get_byte(iobase, OFFSET_OF(struct virtio_header, isr_status));
+
+  return isr;
+}
+
 b8
 vdev_confirm_features(struct virtio_dev *vdev, u32 features)
 {
@@ -197,7 +214,6 @@ virtio_get_features(struct virtio_dev *vdev)
   u32 iobase = vdev -> iobase;
   return virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, device_features));
 }
-
 
 b8 
 virtio_probe(struct pci_dev *dev)

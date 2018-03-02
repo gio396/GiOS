@@ -132,4 +132,7 @@ virtio_read_config(struct virtio_dev *dev, size_t size, u8* buffer);
 b8
 vdev_confirm_features(struct virtio_dev *vdev, u32 features);
 
+u8
+virtio_get_isr(struct virtio_dev *vdev);
+
 #endif

@@ -34,7 +34,7 @@ msix_mask_vector(struct msix *msix, u32 vec)
 {
   size_t reg = msi_get_table_reg(msix, vec, OFFSET_OF(struct msix_table_entry, vector_ctrl));
   u32 ctrl = msi_mm_read(reg);
-  msi_mm_write(reg, ctrl & ~MSIX_CTRL_MASK_BIT);
+  msi_mm_write(reg, ctrl | MSIX_CTRL_MASK_BIT);
 }
 
 void
@@ -42,7 +42,7 @@ msix_unmask_vector(struct msix *msix, u32 vec)
 {
   size_t reg = msi_get_table_reg(msix, vec, OFFSET_OF(struct msix_table_entry, vector_ctrl));
   u32 ctrl = msi_mm_read(reg);
-  msi_mm_write(reg, ctrl | MSIX_CTRL_MASK_BIT);
+  msi_mm_write(reg, ctrl & ~MSIX_CTRL_MASK_BIT);
 }
 
 u32

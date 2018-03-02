@@ -33,6 +33,8 @@
 #define VIRTIO_CONSOLE_PORT_OPEN       6
 #define VIRTIO_CONSOLE_PORT_NAME       7
 
+#define VIRTQ_DESC_F_WRITE 2
+
 struct virtio_console_control
 {
   u32 id;
@@ -85,9 +87,27 @@ write_later(u32 addr)
   struct virtio_console *cdev = (struct virtio_console*)(addr);
   vdev_console_write(cdev, 0, (u8*)"kataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\r\n", 64);
 
-  struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, 3);
+  struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, 2);
   LOGV("%d", q -> used -> idx);
   LOGV("%d", q -> avail -> idx);
+
+  u16 ring = q -> next_buffer % q -> size;
+  u16 id = q -> used -> ring[ring].id;
+  LOGV("%d", id);
+
+  u8 *buffer = (u8*)(size_t)q -> desc[id].addr;
+  q -> next_buffer++;
+
+  LOGV("%p", buffer);
+  LOGV("%d", q -> used -> ring[ring].len);
+
+  struct virtio_console_control *cmsg = (struct virtio_console_control*)buffer;
+  LOGV("%d", cmsg ->  id);
+  LOGV("%d", cmsg ->  event);
+  LOGV("%d", cmsg ->  value);
+
+  u8 isr = virtio_get_isr(&cdev -> vdev);
+  LOGV("%02x", isr);
 }
 
 void
@@ -100,15 +120,16 @@ setup_rx(struct virtio_console *cdev, u32 vqid)
   LOGV("%p", q -> desc);
 
   q -> desc[head].addr = (u32)kzmalloc(0x400);
+  memset((u8*)(size_t)q -> desc[head].addr, 0, 0x400);
   q -> desc[head].len  = 0x400;
-  q -> desc[head].flags = 0;
+  q -> desc[head].flags = VIRTQ_DESC_F_WRITE;
   q -> free_head = q -> desc[head].next;
 
   q -> avail -> ring[(q -> avail -> idx + q -> num_added) % q -> size] = head;
   q -> num_added++;
 
-  // u32 iobase = cdev -> vdev.iobase;
-  // virtio_queue_notify(q, iobase);
+  u32 iobase = cdev -> vdev.iobase;
+  virtio_queue_notify(q, iobase);
 
   LOGV("%p", q -> avail -> flags);
 }
@@ -147,7 +168,6 @@ console_setup(struct virtio_dev *vdev)
   virtio_set_queue(&cdev -> vdev, 3, 
     virtio_create_queue("ct0", virtio_get_queue_size(&cdev -> vdev, 3)));
 
-  setup_rx(cdev, 0);
   setup_rx(cdev, 2);
 
   console_send_control_message(cdev, 0xffffffff, VIRTIO_CONSOLE_DEVICE_READY, 1);
@@ -170,6 +190,7 @@ console_remove(struct virtio_dev *vdev)
 void
 console_interrupt(const union biosregs *iregs, struct virtio_dev *vdev)
 {
+  LOGV("%p", iregs);
   struct virtio_console *cdev = vdev_to_cdev(vdev);
   LOG("INTERUPTING CONSOLE! %p\n", cdev);
 }

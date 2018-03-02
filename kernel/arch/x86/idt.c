@@ -224,12 +224,13 @@ get_next_irq()
 }
 
 extern void (*irq_handler_pointer)(const union biosregs *iregs);
+extern void adv_irq_common_stub();
 
 void
 subscribe_irq(u32 irq, void *handler, void *data)
 {
   LOG("irq = %d\n", irq);
-  idt_set_gate(irq, (size_t)irq_handler_pointer, 0x08, IDT_INTR_PL0);
+  idt_set_gate(irq, (size_t)adv_irq_common_stub, 0x08, IDT_INTR_PL0);
 
   irq_handlers[irq].data = data;
   irq_handlers[irq].callback = handler;

@@ -141,7 +141,8 @@ irq_common_stub:
 
 
 extern irq_handler_pointer
-irq_apic_stub:
+global adv_irq_common_stub
+adv_irq_common_stub:
   cli
   sub esp, 8; int_no err_no
   
@@ -159,7 +160,7 @@ irq_apic_stub:
   mov eax, esp
   push eax
 
-  mov eax, irq_handler_pointer
+  mov eax, [irq_handler_pointer]
   call eax
 
   pop eax
