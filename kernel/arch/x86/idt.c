@@ -223,7 +223,7 @@ get_next_irq()
   return it;
 }
 
-extern void (*irq_handler_pointer)(const union biosregs *iregs);
+extern void (*irq_handler_pointer)(union biosregs *iregs);
 extern void adv_irq_common_stub();
 
 void
@@ -237,7 +237,7 @@ subscribe_irq(u32 irq, void *handler, void *data)
 }
 
 void
-idt_call_irq(u32 irq, const union biosregs *iregs)
+idt_call_irq(u32 irq, union biosregs *iregs)
 {
   irq_handlers[irq].callback(iregs, irq_handlers[irq].data);
 }

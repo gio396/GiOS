@@ -29,7 +29,7 @@
 
 typedef void(*PROCIRQHandler)(const union biosregs *reg);
 
-void (*irq_handler_pointer)(const union biosregs *iregs) = NULL;
+void (*irq_handler_pointer)(union biosregs *iregs) = NULL;
 
 global void *irq_handlers[] = 
 {

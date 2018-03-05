@@ -59,11 +59,11 @@ virtio_create_queue(i8 *name, u32 len)
   res -> avail -> flags = 0;
 
 //TODO(gio:) chain all the values 
-  // for (u32 i = 0; i < len; i++)
-  // {
-  //   res -> desc[i].next = i + 1;
-  // }
-  // res -> desc[len - 1].next = 0;
+  for (u32 i = 0; i < len; i++)
+  {
+    res -> desc[i].next = i + 1;
+  }
+  res -> desc[len - 1].next = 0;
 
   return res;
 }
@@ -73,23 +73,6 @@ virtio_create_queue(i8 *name, u32 len)
 void
 virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len)
 {
-  #if 0
-  u16 head = q -> free_head;
-
-  q -> desc[head].flags = 0;
-
-  q -> desc[head].addr = (u64)(VIRT2PHYS(buffer));
-
-  q -> desc[head].len  = (u32)len ;
-
-  q -> free_head = q -> desc[head].next;
-
-  u16 avail_idx = (q -> avail -> idx + q -> num_added) % q -> size;
-  q -> num_added++;
-
-  q -> avail -> ring[avail_idx] = head;
-  #else
-
   u16 index = q -> avail -> idx  % q -> size;
   u16 buffer_index = q -> next_buffer;
   u16 next_buffer_index = (buffer_index + 1) % q->size;
@@ -103,8 +86,6 @@ virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len)
 
   q -> next_buffer = buffer_index;
   q -> num_added++;
-
-  #endif
 }
 
 void

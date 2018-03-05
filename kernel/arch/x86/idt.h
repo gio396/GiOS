@@ -40,6 +40,6 @@ void
 subscribe_irq(u32 irq, void *handler, void *data);
 
 void
-idt_call_irq(u32 irq, const union biosregs *iregs); 
+idt_call_irq(u32 irq, union biosregs *iregs); 
 
 #endif

@@ -119,16 +119,21 @@ setup_rx(struct virtio_console *cdev, u32 vqid)
   LOGV("%d", head);
   LOGV("%p", q -> desc);
 
-  q -> desc[head].addr = (u32)kzmalloc(0x400);
-  memset((u8*)(size_t)q -> desc[head].addr, 0, 0x400);
-  q -> desc[head].len  = 0x400;
-  q -> desc[head].flags = VIRTQ_DESC_F_WRITE;
-  q -> free_head = q -> desc[head].next;
+  u16 index = q -> avail -> idx % q -> size;
+  u16 buffer_index = q -> next_buffer;
+  u16 next_buffer_index = (buffer_index + 1) % q -> size;
 
-  q -> avail -> ring[(q -> avail -> idx + q -> num_added) % q -> size] = head;
-  q -> num_added++;
+  q -> avail -> ring[index] = buffer_index;
+  q -> desc[head].flags = VIRTQ_DESC_F_WRITE;
+  q -> desc[head].addr = (u32)kzmalloc(0x400);
+  q -> desc[head].len  = 0x400;
+  q -> desc[head].next = next_buffer_index;
+  buffer_index = next_buffer_index;
+
+  q -> avail -> idx = next_buffer_index;
 
   u32 iobase = cdev -> vdev.iobase;
+  virtio_queue_kick(q, iobase);
   virtio_queue_notify(q, iobase);
 
   LOGV("%p", q -> avail -> flags);
@@ -171,7 +176,6 @@ console_setup(struct virtio_dev *vdev)
   setup_rx(cdev, 2);
 
   console_send_control_message(cdev, 0xffffffff, VIRTIO_CONSOLE_DEVICE_READY, 1);
-  
   new_timer(5 * 1000 * 1000, write_later, (u32)cdev);
 
   return 1;
@@ -190,9 +194,44 @@ console_remove(struct virtio_dev *vdev)
 void
 console_interrupt(const union biosregs *iregs, struct virtio_dev *vdev)
 {
-  LOGV("%p", iregs);
   struct virtio_console *cdev = vdev_to_cdev(vdev);
-  LOG("INTERUPTING CONSOLE! %p\n", cdev);
+  UNUSED(cdev);
+  u8 isr = virtio_get_isr(vdev);
+
+  if ((isr & 0x1) == 0x1)
+  {
+    LOG("VIRTQ CHANGE\n");
+    for (i32 i = 0; i < 32; i++)
+    {
+      struct virtio_queue *q = vdev -> virtq[i];
+      if (q)
+      {
+        LOGV("%p", q -> next_buffer);
+        LOGV("%p", q -> used -> idx);
+        LOGV("%p", q -> avail -> idx);
+
+        if (q -> next_buffer != q -> used -> idx)
+        {
+          u16 buffer_index = q -> next_buffer;
+          u8 *buffer = (u8*)(size_t)q -> desc[buffer_index].addr;
+          struct virtio_console_control  *ctrl = (struct virtio_console_control*)buffer;
+
+          LOGV("%d", ctrl -> id);
+          LOGV("%d", ctrl -> event);
+          LOGV("%d", ctrl -> value);
+
+          q -> next_buffer++;
+
+          console_send_control_message(cdev, ctrl -> id, VIRTIO_CONSOLE_PORT_READY, ctrl -> value);
+        }
+      }
+    }
+  }
+  if ((isr & 0x3) == 0x3)
+  {
+    LOG("CONFIGURATION CHANGE!\n");
+    //handle configuration change
+  }
 }
 
 struct virtio_driver virtio_console_driver = {

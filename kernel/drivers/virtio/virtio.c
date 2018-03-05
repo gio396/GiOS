@@ -128,8 +128,6 @@ virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
 
   if (dev -> pdev.msix.enabled)
   {
-    LOGV("%d", idx);
-
     u16 vector = 0;
     virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, config_msix_vector), (u8*)&vector);
 

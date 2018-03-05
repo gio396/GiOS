@@ -320,10 +320,11 @@ pci_find_driver(struct pci_driver **found, struct pci_dev *dev)
 void
 pci_irq_handler(const union biosregs *iregs, struct pci_dev *dev)
 {
-  LOG("PCI_IRQ_HANDLER!\n");
   struct pci_driver *driver = dev -> driver;
   if (driver && driver -> ievent)
+  {
     driver -> ievent(iregs, dev);
+  }
 }
 
 internal b8
