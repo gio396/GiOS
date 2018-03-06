@@ -4,6 +4,17 @@
 #include <common.h>
 #include <list.h>
 
+#define VQ_IN 1
+#define VQ_OUT 0
+
+struct scatter_list
+{
+  u8  *buffer;
+  u32 len;
+
+  struct dlist_node node;
+};
+
 struct virtq_desc
 {
   u64 addr;
@@ -37,6 +48,7 @@ struct virtq_used
 
 struct virtio_queue
 {
+  struct virtio_dev *vdev;
   u32 idx;
 
   i8 *name;
@@ -48,17 +60,23 @@ struct virtio_queue
   u16 free_head;
   u16 num_added;
   u16 size;
+  u16 last_buffer_seen;
 
   struct virtq_desc  *desc;
   struct virtq_avail *avail;
   struct virtq_used  *used;
+
+  void(*handle_input)(struct virtio_queue*, struct scatter_list*);
 };
 
 struct virtio_queue*
 virtio_create_queue(i8 *name, u32 size);
 
 void
-virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len);
+virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len, u8 direction);
+
+struct scatter_list
+virtio_queue_dequeue(struct virtio_queue *q); 
 
 void
 virtio_queue_kick(struct virtio_queue *q, u32 iobase);

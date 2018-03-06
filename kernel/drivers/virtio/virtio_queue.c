@@ -68,24 +68,47 @@ virtio_create_queue(i8 *name, u32 len)
   return res;
 }
 
-#include <mem_layout.h>
-
 void
-virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len)
+virtio_queue_enqueue(struct virtio_queue *q, u8 *buffer, size_t len, u8 direction)
 {
   u16 index = q -> avail -> idx  % q -> size;
   u16 buffer_index = q -> next_buffer;
   u16 next_buffer_index = (buffer_index + 1) % q->size;
 
   q -> avail -> ring[index] = buffer_index;
-  q -> desc[buffer_index].flags = 0;
+  q -> desc[buffer_index].flags = direction ? VIRTQ_DESC_F_WRITE : 0;
   q -> desc[buffer_index].next = next_buffer_index;
   q -> desc[buffer_index].len = len;
   q -> desc[buffer_index].addr = (size_t)(buffer);
   buffer_index = next_buffer_index;
 
   q -> next_buffer = buffer_index;
+
+  if (!direction)
+  {
+    q -> last_buffer_seen = buffer_index;
+  }
+
   q -> num_added++;
+}
+
+struct scatter_list
+virtio_queue_dequeue(struct virtio_queue *q)
+{
+  struct scatter_list res = {};
+  u16 buffer_index = q -> last_buffer_seen;
+  LOGV("%d", buffer_index);
+
+  struct virtq_used_elem *elem = &q -> used -> ring[buffer_index];
+  u32 len = elem -> len;
+  LOGV("%d", elem -> id);
+  u8  *buffer = (u8*)(size_t)q -> desc[buffer_index].addr;
+
+  res.len = len;
+  res.buffer = buffer;
+  q -> last_buffer_seen++;
+
+  return res;
 }
 
 void

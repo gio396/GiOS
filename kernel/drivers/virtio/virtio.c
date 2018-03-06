@@ -112,6 +112,7 @@ virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
 {
   dev -> virtq[idx]        = que;
   dev -> virtq[idx] -> idx = idx;
+  que -> vdev = dev;
 
   u32 iobase = dev -> iobase;
   u32 uaddr = (u32)que -> desc / 4096;

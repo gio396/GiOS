@@ -50,7 +50,7 @@ os.iso: kernel.elf
 	# 						-o os.iso                       \
 	# 						iso
 
-QEMU_COMMON_FLAGS=-m 256 -cpu core2duo -smp 1 -device virtio-serial,id=nxtoolsBus0 -device virtserialport,chardev=nxtoolsChardev0,name=nxtools0,id=nxtoolsGuest0 -chardev socket,path=/tmp/GOV,server,id=nxtoolsChardev0
+QEMU_COMMON_FLAGS=-m 256 -cpu core2duo -smp 1 -device virtio-serial,id=nxtoolsBus0 -device virtserialport,chardev=nxtoolsChardev0,name=kata,id=nxtoolsGuest0 -chardev socket,path=/tmp/GOV,server,id=nxtoolsChardev0
 
 #--drive file=image_file.raw,if=virtio
 

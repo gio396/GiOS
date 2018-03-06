@@ -57,15 +57,72 @@ new_console_device(struct pci_dev *pdev)
   return cdev;
 }
 
-void intr_handler()
-{
-  
-}
-
 struct virtio_console*
 vdev_to_cdev(struct virtio_dev *vdev)
 {
   return CONTAINER_OF(vdev, struct virtio_console, vdev);
+}
+
+void
+console_send_control_message(struct virtio_console *cdev, u32 id, u16 event, u16 value)
+{
+  struct virtio_console_control *ctrl = (struct virtio_console_control*)kzmalloc(sizeof(struct virtio_console_control));
+
+  ctrl -> id = id;
+  ctrl -> event = event;
+  ctrl -> value = value;
+
+  struct virtio_queue *vq = virtio_get_queue(&cdev -> vdev, 3);
+  virtio_queue_enqueue(vq, (u8*)ctrl, sizeof(struct virtio_console_control), VQ_OUT);
+  virtio_dev_kick_queue(&cdev -> vdev, vq);
+}
+
+void
+console_handle_control_message(struct virtio_queue *q, struct scatter_list *list)
+{
+  u8 *buffer = list -> buffer;
+  struct virtio_console_control *cmsg = (struct virtio_console_control*)buffer;
+  struct virtio_console *cdev = vdev_to_cdev(q -> vdev);
+  assert1(cmsg -> id < q -> size);
+
+  LOGV("%d", cmsg -> id);
+  LOGV("%d", cmsg -> event);
+  LOGV("%d", cmsg -> value);
+
+  switch (cmsg -> event)
+  {
+    case VIRTIO_CONSOLE_DEVICE_ADD:
+    {
+      //request to add port with id cmsg -> id
+      LOG("Recieved request to add port device #%d\n", cmsg -> id);
+      u16 base_id = RN(cmsg -> id);
+      virtio_set_queue(&cdev -> vdev, base_id, 
+          virtio_create_queue("NULL", virtio_get_queue_size(&cdev -> vdev, base_id)));
+      virtio_set_queue(&cdev -> vdev, base_id + 1,
+          virtio_create_queue("NULL", virtio_get_queue_size(&cdev -> vdev, base_id + 1)));
+
+
+      console_send_control_message(cdev, cmsg -> id, VIRTIO_CONSOLE_PORT_READY, 1);
+    }break;
+
+    case VIRTIO_CONSOLE_PORT_NAME:
+    {
+      LOGV("Recieved port name from device for port #%d\n", cmsg -> id);
+      LOGV("%d", list -> len);
+      u16 name_len = list -> len - sizeof(struct virtio_console_control);
+      u8 name[name_len + 1];
+      memcpy(buffer + sizeof(struct virtio_console_control), name,  name_len);
+      name[name_len] = '\0';
+
+      LOG("PORT_NAME = %s\n", name);
+    }break;
+
+    case VIRTIO_CONSOLE_PORT_OPEN:
+    {
+      LOGV("Recieved request to open port #%d\n", cmsg -> id);
+      console_send_control_message(cdev, cmsg -> id, VIRTIO_CONSOLE_PORT_OPEN, 1);
+    }break;
+  }
 }
 
 b8
@@ -85,7 +142,11 @@ void
 write_later(u32 addr)
 {
   struct virtio_console *cdev = (struct virtio_console*)(addr);
-  vdev_console_write(cdev, 0, (u8*)"kataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\r\n", 64);
+  u8 *sb = (u8*)kzmalloc(6);
+
+  memcpy("kata\r\n", sb, 6);
+
+  vdev_console_write(cdev, 1, sb, 9);
 
   struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, 2);
   LOGV("%d", q -> used -> idx);
@@ -114,43 +175,17 @@ void
 setup_rx(struct virtio_console *cdev, u32 vqid)
 {
   struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, vqid);
-  u32 head = q -> free_head;
-
-  LOGV("%d", head);
-  LOGV("%p", q -> desc);
-
-  u16 index = q -> avail -> idx % q -> size;
-  u16 buffer_index = q -> next_buffer;
-  u16 next_buffer_index = (buffer_index + 1) % q -> size;
-
-  q -> avail -> ring[index] = buffer_index;
-  q -> desc[head].flags = VIRTQ_DESC_F_WRITE;
-  q -> desc[head].addr = (u32)kzmalloc(0x400);
-  q -> desc[head].len  = 0x400;
-  q -> desc[head].next = next_buffer_index;
-  buffer_index = next_buffer_index;
-
-  q -> avail -> idx = next_buffer_index;
-
   u32 iobase = cdev -> vdev.iobase;
+  virtio_queue_enqueue(q, kzmalloc(0x400), 400, VQ_IN);
   virtio_queue_kick(q, iobase);
-  virtio_queue_notify(q, iobase);
-
-  LOGV("%p", q -> avail -> flags);
-}
-
-void
-console_send_control_message(struct virtio_console *cdev, u32 id, u16 event, u16 value)
-{
-  struct virtio_console_control *ctrl = (struct virtio_console_control*)kzmalloc(sizeof(struct virtio_console_control));
-
-  ctrl -> id = id;
-  ctrl -> event = event;
-  ctrl -> value = value;
-
-  struct virtio_queue *vq = virtio_get_queue(&cdev -> vdev, 3);
-  virtio_queue_enqueue(vq, (u8*)ctrl, sizeof(struct virtio_console_control));
-  virtio_dev_kick_queue(&cdev -> vdev, vq);
+  virtio_queue_enqueue(q, kzmalloc(0x400), 400, VQ_IN);
+  virtio_queue_kick(q, iobase);
+  virtio_queue_enqueue(q, kzmalloc(0x400), 400, VQ_IN);
+  virtio_queue_kick(q, iobase);
+  virtio_queue_enqueue(q, kzmalloc(0x400), 400, VQ_IN);
+  virtio_queue_kick(q, iobase);
+  virtio_queue_enqueue(q, kzmalloc(0x400), 400, VQ_IN);
+  virtio_queue_kick(q, iobase);
 }
 
 b8
@@ -164,12 +199,11 @@ console_setup(struct virtio_dev *vdev)
   LOGV("%d", cdev -> cfg.nr_ports);
   LOGV("%d", cdev -> cfg.emerg_wr);
 
-  virtio_set_queue(&cdev -> vdev, 0, 
-    virtio_create_queue("r0",  virtio_get_queue_size(&cdev -> vdev, 0)));
-  virtio_set_queue(&cdev -> vdev, 1, 
-    virtio_create_queue("t0",  virtio_get_queue_size(&cdev -> vdev, 1)));
+  struct virtio_queue *cr0 = virtio_create_queue("cr0", virtio_get_queue_size(&cdev -> vdev, 2));
+  cr0 -> handle_input = console_handle_control_message;
+
   virtio_set_queue(&cdev -> vdev, 2, 
-    virtio_create_queue("cr0", virtio_get_queue_size(&cdev -> vdev, 2)));
+    cr0);
   virtio_set_queue(&cdev -> vdev, 3, 
     virtio_create_queue("ct0", virtio_get_queue_size(&cdev -> vdev, 3)));
 
@@ -177,6 +211,10 @@ console_setup(struct virtio_dev *vdev)
 
   console_send_control_message(cdev, 0xffffffff, VIRTIO_CONSOLE_DEVICE_READY, 1);
   new_timer(5 * 1000 * 1000, write_later, (u32)cdev);
+  new_timer(5 * 1000 * 1000, write_later, (u32)cdev);
+  new_timer(5 * 1000 * 1000, write_later, (u32)cdev);
+  new_timer(5 * 1000 * 1000, write_later, (u32)cdev);
+  
 
   return 1;
 }
@@ -206,23 +244,13 @@ console_interrupt(const union biosregs *iregs, struct virtio_dev *vdev)
       struct virtio_queue *q = vdev -> virtq[i];
       if (q)
       {
-        LOGV("%p", q -> next_buffer);
-        LOGV("%p", q -> used -> idx);
-        LOGV("%p", q -> avail -> idx);
-
-        if (q -> next_buffer != q -> used -> idx)
+        LOG("%d %d %d\n", q -> idx, q -> last_buffer_seen, q -> used -> idx);
+        while (q -> last_buffer_seen < q -> used -> idx)
         {
-          u16 buffer_index = q -> next_buffer;
-          u8 *buffer = (u8*)(size_t)q -> desc[buffer_index].addr;
-          struct virtio_console_control  *ctrl = (struct virtio_console_control*)buffer;
+          LOG("input!\n");
 
-          LOGV("%d", ctrl -> id);
-          LOGV("%d", ctrl -> event);
-          LOGV("%d", ctrl -> value);
-
-          q -> next_buffer++;
-
-          console_send_control_message(cdev, ctrl -> id, VIRTIO_CONSOLE_PORT_READY, ctrl -> value);
+          struct scatter_list list = virtio_queue_dequeue(q);
+          q -> handle_input(q, &list);
         }
       }
     }
@@ -261,7 +289,7 @@ vdev_console_write(struct virtio_console *cdev, u32 port, u8 *buffer, size_t len
   }
 
   struct virtio_queue *q = virtio_get_queue(&cdev -> vdev, qidx);
-  virtio_queue_enqueue(q, buffer, len);
+  virtio_queue_enqueue(q, buffer, len, VQ_OUT);
   virtio_dev_kick_queue(&cdev -> vdev, q);
   LOG("USED IDX! %d\n", q -> used -> idx);
 
