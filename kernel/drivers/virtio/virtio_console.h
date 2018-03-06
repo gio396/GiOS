@@ -13,16 +13,10 @@ struct virtio_console_config
   u32 emerg_wr;
 };
 
-struct virtio_console
-{
-  struct virtio_dev vdev;
-  struct virtio_console_config cfg;
-};
-
 struct virtio_dev*
 init_vdev_console(struct pci_dev *dev);
 
-void
-vdev_console_write(struct virtio_console *cdev, u32 port, u8 *buffer, size_t len);
+// void
+// vdev_console_write(struct virtio_console *cdev, u32 port, u8 *buffer, size_t len);
 
 #endif

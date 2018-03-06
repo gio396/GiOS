@@ -22,16 +22,15 @@ static inline u32 virtq_size(u32 qsz)
 return QALLIGN(sizeof(struct virtq_desc)*qsz + sizeof(u16)*(3 + qsz))
       + QALLIGN(sizeof(u16)*3 + sizeof(struct virtq_used_elem)*qsz);
 }
+#undef QALLIGN
 
 struct virtio_queue*
-virtio_create_queue(i8 *name, u32 len)
+virtio_create_queue(u32 len)
 {
   static u32 offset = 0;
   struct virtio_queue *res = (struct virtio_queue*)kzmalloc(sizeof(struct virtio_queue));
   ZERO_STRUCT(res, struct virtio_queue);
 
-  res -> name = name;
-  res -> free_head = 0;
   res -> num_added = 0;
   res -> size      = len;
 
@@ -50,15 +49,10 @@ virtio_create_queue(i8 *name, u32 len)
   assert1(ALIGNED(res -> avail, 2));
   assert1(ALIGNED(res -> used,  4));
 
-  LOGV("%p", res -> desc);
-  LOGV("%p", res -> avail);
-  LOGV("%p", res -> used);
-  LOGV("%d", res -> size);
-
   res -> next_buffer = 0;
   res -> avail -> flags = 0;
 
-//TODO(gio:) chain all the values 
+  //TODO(gio): chain all the values 
   for (u32 i = 0; i < len; i++)
   {
     res -> desc[i].next = i + 1;
@@ -97,11 +91,9 @@ virtio_queue_dequeue(struct virtio_queue *q)
 {
   struct scatter_list res = {};
   u16 buffer_index = q -> last_buffer_seen;
-  LOGV("%d", buffer_index);
 
   struct virtq_used_elem *elem = &q -> used -> ring[buffer_index];
   u32 len = elem -> len;
-  LOGV("%d", elem -> id);
   u8  *buffer = (u8*)(size_t)q -> desc[buffer_index].addr;
 
   res.len = len;
@@ -129,21 +121,4 @@ virtio_queue_notify(struct virtio_queue *q, u32 iobase)
   u32 idx = q -> idx;
   asm volatile("mfence" ::: "memory");
   virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_notify), (u8*)&idx); 
-}
-
-
-void
-virtq_assign_buffer(struct virtio_queue *q)
-{
-  u16 head = q -> free_head;
-
-  q -> desc[head].flags = 0;
-  q -> desc[head].addr = (size_t)kzmalloc(100);
-  q -> desc[head].len = 100;
-  q -> free_head = q -> desc[head].next;
-
-  u16 avail_idx = (q -> avail -> idx + q -> num_added) % q -> size;
-  q -> num_added++;
-
-  q -> avail -> ring[avail_idx] = head;
 }

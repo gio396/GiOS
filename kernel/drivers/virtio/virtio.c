@@ -93,8 +93,6 @@ virtio_add_status(u32 iobase, u8 ns)
   virtio_header_set_byte(iobase, OFFSET_OF(struct virtio_header, device_status), (u8*)&status);
 
   status = virtio_header_get_byte(iobase, OFFSET_OF(struct virtio_header, device_status)) & 0xff;
-
-  LOG("STATUS %02x!\n", status);
 }
 
 void
@@ -122,9 +120,9 @@ virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
 
   u32 addr = virtio_header_get_dword(iobase, OFFSET_OF(struct virtio_header, queue_addr));
 
-  if (addr == uaddr)
+  if (addr != uaddr)
   {
-    LOG("Successfully set virtq queue!\n");
+    assert1(0);
   }
 
   if (dev -> pdev.msix.enabled)

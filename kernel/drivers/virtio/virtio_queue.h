@@ -51,13 +51,7 @@ struct virtio_queue
   struct virtio_dev *vdev;
   u32 idx;
 
-  i8 *name;
-
-  u16 last_index_used;
-  u16 last_available_index;
-  u32 chunk_size;
   u16 next_buffer;
-  u16 free_head;
   u16 num_added;
   u16 size;
   u16 last_buffer_seen;
@@ -70,7 +64,7 @@ struct virtio_queue
 };
 
 struct virtio_queue*
-virtio_create_queue(i8 *name, u32 size);
+virtio_create_queue(u32 size);
 
 void
 virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len, u8 direction);

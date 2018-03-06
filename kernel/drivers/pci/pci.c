@@ -34,7 +34,6 @@ pci_append_bus(struct pci_bus *node, struct pci_bus *parrent)
 void
 pci_register_device(struct pci_dev *dev)
 {
-  LOGV("%p", dev);
   bus_register_device(global_bus -> pci_device_bus, &dev -> device);
   dlist_insert_tail(&dev -> bus -> devices, &dev -> self);
 }
@@ -190,7 +189,6 @@ pci_dev_check_msix_capability(struct pci_dev *dev)
     return 0;
   }
 
-  LOG("Device %d has msix capability!\n", dev -> dev);
   dev -> has_msix = 1;
   dev -> msix.cap_base =  pos;
 
@@ -203,8 +201,6 @@ pci_dev_setup_msix(struct pci_dev *dev)
   u8 pos = dev -> msix.cap_base;
   u16 mctrl;
   pci_dev_read_config_word(dev, pos + OFFSET_OF(struct msix_capability_header, message_controll), &mctrl);
-
-  LOG("MCTRL 0x%04x\n", mctrl);
 
   u16 max_entries = (mctrl && 0x7ff) + 1;
 
@@ -225,18 +221,11 @@ pci_dev_setup_msix(struct pci_dev *dev)
   dev -> msix.enabled = 1;//(mctrl >> 15) & 0x1;
   dev -> msix.function_mask = (mctrl >> 14) & 1;
 
-  LOG("MASKED = %d\n", dev -> msix.function_mask);
-  LOG("ENABLED = %d\n", dev -> msix.enabled);
-
   if (dev -> msix.enabled)
   {
     mmap(dev -> msix.table_addr, 1, 0);
     mmap(dev -> msix.pba_addr,   1, 0);
   }
-
-  LOGV("%p", dev -> msix.table_addr);
-  LOGV("%p", dev -> msix.pba_addr);
-  LOGV("%02x", dev -> msix.max_entries);
 
   mctrl = (mctrl & ~(1 << 14));
   pci_dev_write_config_word(dev, pos + OFFSET_OF(struct msix_capability_header, message_controll), mctrl);
@@ -363,7 +352,6 @@ driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
     return 0;
   }
 
-  LOGV("%d", dev -> has_msix);
   if (dev -> has_msix && dev -> msix.enabled)
   {
     pci_setup_msix(new_dev);
@@ -410,10 +398,10 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
   cmd = pci_config_read_dword(bus, device, function, PCI_CMD_REG_OFFSET);
 
   LOGV("PCI %p", cmd);
-  LOG("Vendor id 0x%04x\n", vendor_id);
-  LOG("Device id 0x%04x\n", device_id);
-  LOG("Class base 0x%0x\nclass sub 0x%0x\n", base_class, sub_class);
-  LOG("Revision 0x%0x\n", revision);
+  LOG("   Vendor id 0x%04x\n", vendor_id);
+  LOG("   Device id 0x%04x\n", device_id);
+  LOG("   Class base 0x%0x\n   class sub 0x%0x\n", base_class, sub_class);
+  LOG("   Revision 0x%0x\n", revision);
 
   ldev -> bus          = lbus;
   ldev -> dev          = device;
@@ -430,7 +418,7 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
   for (i32 i = 0; i < 6; i++)
   {
     ldev -> BAR[i] = pci_config_read_dword(bus, device, function, PCI_BASE_ADRESS_OFFSET(i));
-    LOG("BAR[%d] = 0x%08x.\n", i, ldev -> BAR[i]);
+    // LOG("BAR[%d] = 0x%08x.\n", i, ldev -> BAR[i]);
     u32 bar = ldev -> BAR[i];
 
     if (!bar) continue;
@@ -451,8 +439,6 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
     {
       u32 base_addr = bar & BASE_ADDRESS_MEM_MASK;
       u32 pci_end = base_addr + pci_size(len, BASE_ADDRESS_MEM_MASK);
-
-      LOG("Actual mem base %p!\n", base_addr);
 
       ldev -> resources[i].type = RESOURCE_MEM;
       ldev -> resources[i].start = base_addr;
@@ -492,9 +478,6 @@ check_function(u8 bus, u8 device, u8 function, struct pci_bus *lbus, struct pci_
   //   walk_bus(sbus, nbus);
   // }
 
-  LOGV("%p", new_device);
-  LOGV("%p", new_device -> vendor_id);
-  LOGV("%p", new_device -> bus);
   pci_register_device(new_device);
 }
 
@@ -536,7 +519,6 @@ pci_enum()
 
   if ((header_type & 0x80) == 0)
   {
-    LOG("SINGLE pci host controller!\n");
     walk_bus(0, global_bus);
   }
   else
@@ -552,8 +534,6 @@ pci_enum()
   }
 
   print_pci(global_bus, 0);
-
-  // pci_init_drivers(global_bus);
 }
 
 struct dlist_node*
@@ -577,7 +557,6 @@ pci_lookup_device_next(struct dlist_node *it, u16 vendor_id)
   }
 
   //TODO(gio): Check other busses!\n
-
   return NULL;
 }
 
@@ -598,7 +577,6 @@ pci_dev_read_config_byte(struct pci_dev *dev, u8 offset, u8 *res)
 
   tmp = pci_config_read_byte(bus, device, func, offset);
 
-  LOG("pci_dev_read_config_byte 0x%04x\n", tmp);
   *res = (u8)(tmp & 0xff);
 }
 
@@ -672,7 +650,6 @@ pci_find_cap_next_ttl(u8 bus, u8 device, u8 function, i32 pos, u8 cap, i32 *ttl)
     if (id == 0xff)
       break;
 
-    LOG("ID = %p\n", id);
     if (id == cap)
       return pos;
 
