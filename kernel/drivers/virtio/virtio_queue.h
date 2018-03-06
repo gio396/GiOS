@@ -73,12 +73,15 @@ struct scatter_list
 virtio_queue_dequeue(struct virtio_queue *q); 
 
 void
-virtio_queue_kick(struct virtio_queue *q, u32 iobase);
+virtio_queue_kick(struct virtio_queue *q);
 
 void
-virtio_queue_notify(struct virtio_queue *q, u32 iobase);
+virtio_queue_notify(struct virtio_queue *q);
 
 void
 virtq_assign_buffer(struct virtio_queue *q);
+
+i8
+virtio_queue_has_unseen_buffers(struct virtio_queue *q);
 
 #endif

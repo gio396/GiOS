@@ -31,6 +31,7 @@ struct virtio_dev
 
   //driver
   struct virtio_driver *driver;
+  //TODO(gio): get rid of this!
   struct virtio_queue *virtq[64];
 };
 
@@ -122,9 +123,6 @@ virtio_get_queue(struct virtio_dev *dev, i32 idx);
 
 u32
 virtio_get_queue_size(struct virtio_dev *dev, i32 idx);
-
-void
-virtio_dev_kick_queue(struct virtio_dev *dec, struct virtio_queue *q);
 
 void
 virtio_read_config(struct virtio_dev *dev, size_t size, u8* buffer);

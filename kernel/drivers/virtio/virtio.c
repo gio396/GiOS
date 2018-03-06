@@ -154,12 +154,6 @@ virtio_get_queue_size(struct virtio_dev *dev, i32 idx)
   return size;
 }
 
-void
-virtio_dev_kick_queue(struct virtio_dev *dev, struct virtio_queue *q)
-{
-  virtio_queue_kick(q, dev -> iobase);
-}
-
 internal size_t
 get_config_offset(struct virtio_dev *dev)
 {

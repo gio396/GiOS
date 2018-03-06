@@ -104,21 +104,39 @@ virtio_queue_dequeue(struct virtio_queue *q)
 }
 
 void
-virtio_queue_kick(struct virtio_queue *q, u32 iobase)
+virtio_queue_kick(struct virtio_queue *q)
 {
   q -> avail -> idx = q -> avail -> idx + q -> num_added;
   q -> num_added = 0;
 
   if (!(q -> used -> flags & VIRTQ_USED_F_NO_NOTIFY))
   {
-    virtio_queue_notify(q, iobase);
+    virtio_queue_notify(q);
   }
 }
 
 void
-virtio_queue_notify(struct virtio_queue *q, u32 iobase)
+virtio_queue_notify(struct virtio_queue *q)
 {
+  u32 iobase = q -> vdev -> iobase;
   u32 idx = q -> idx;
   asm volatile("mfence" ::: "memory");
   virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_notify), (u8*)&idx); 
+}
+
+u16
+virtio_queue_num_heads(struct virtio_queue *vq)
+{
+  if (vq -> last_buffer_seen < vq -> used -> idx)
+  {
+    return vq -> used -> idx - vq -> last_buffer_seen;
+  }
+
+  return 0;
+}
+
+i8
+virtio_queue_has_unseen_buffers(struct virtio_queue *q)
+{
+  return (virtio_queue_num_heads(q) > 0);
 }
