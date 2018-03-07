@@ -1,5 +1,5 @@
 OBJS= \
-	virtio.o virtio_console.o virtio_queue.o
+	virtio.o virtio_console.o virtio_block.o virtio_queue.o
 
 all: $(SUBDIRS) $(OBJS)
 	cp *.o $(BUILD_ROOT)/OBJS

@@ -184,6 +184,7 @@ const char* idt_error_desc[] =
   "Debug Exception.",
   "Non maskable interupt Exception.",
   "Breakpoint Exception.",
+  "Overflow Exception.",
   "Out of bounds Exception.",
   "Invalid opcode Exception.",
   "No compressor Exception.",
@@ -203,7 +204,7 @@ const char* idt_error_desc[] =
 void 
 idt_common_handler(const union biosregs* ireg)
 {
-  printk(&state, "Encountered %s halting..\n", idt_error_desc[ireg->int_no - 1]);
+  printk(&state, "Encountered %s halting..\n", idt_error_desc[ireg->int_no]);
 
   //halt the system;
   halt();
@@ -212,7 +213,7 @@ idt_common_handler(const union biosregs* ireg)
 u32
 get_next_irq()
 {
-  i32 it = 48;
+  i32 it = 64;
 
   for (; it < IDT_SIZE; it++)
   {

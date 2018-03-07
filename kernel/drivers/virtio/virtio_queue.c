@@ -90,7 +90,7 @@ struct scatter_list
 virtio_queue_dequeue(struct virtio_queue *q)
 {
   struct scatter_list res = {};
-  u16 buffer_index = q -> last_buffer_seen;
+  u16 buffer_index = q -> last_buffer_seen % q -> size;
 
   struct virtq_used_elem *elem = &q -> used -> ring[buffer_index];
   u32 len = elem -> len;

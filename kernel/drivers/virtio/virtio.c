@@ -15,6 +15,7 @@
 #define VIRTIO_SUBSYSTEM_CONSOLE  3
 
 #include "virtio_console.h"
+#include "virtio_block.h"
 
 #define ERINIT -1
 
@@ -108,8 +109,7 @@ virtio_get_config(u32 iobase, u32 offset, u8 *buffer, size_t size)
 void
 virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
 {
-  dev -> virtq[idx]        = que;
-  dev -> virtq[idx] -> idx = idx;
+  que -> idx = idx;
   que -> vdev = dev;
 
   u32 iobase = dev -> iobase;
@@ -133,14 +133,8 @@ virtio_set_queue(struct virtio_dev *dev, i32 idx, struct virtio_queue *que)
     vector = 1;
     virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_msix_vector), (u8*)&vector);
 
+    vector = virtio_header_get_word(iobase, OFFSET_OF(struct virtio_header, queue_msix_vector));
   }
-}
-
-
-struct virtio_queue*
-virtio_get_queue(struct virtio_dev *dev, i32 idx)
-{
-  return dev -> virtq[idx];
 }
 
 u32
@@ -271,6 +265,11 @@ virtio_init(struct pci_dev *dev)
     case VIRTIO_SUBSYSTEM_CONSOLE:
     {
       vdev = init_vdev_console(dev);
+    }break;
+
+    case VIRTIO_SUBSYSTEM_BLOCK:
+    {
+      vdev = init_vdev_block(dev);
     }break;
 
     default:

@@ -6,7 +6,6 @@
 #include <arch/x86/idt.h>
 #include <arch/x86/page.h>
 
-
 #include <drivers/pci/pci.h>
 
 #include <macros.h>
@@ -44,8 +43,11 @@ struct virtio_console_control
   u16 value;
 };
 
-#define CONSOLE_PORT_IS_CONSOLE (1 << 0)
-#define CONSOLE_PORT_OPEN       (1 << 1)
+#define CONSOLE_PORT_CONSOLE_BIT 0
+#define CONSOLE_PORT_OPEN_BIT    1
+
+#define CONSOLE_PORT_CONSOLE (1 << CONSOLE_PORT_CONSOLE_BIT)
+#define CONSOLE_PORT_OPEN    (1 << CONSOLE_PORT_OPEN_BIT)
 
 struct port_buffer
 {
@@ -63,8 +65,6 @@ init_port_buffer(struct port_buffer *buffer)
 
 struct console_port
 {
-  struct virtio *vdev;
-
   struct port_buffer inbuf;
   struct port_buffer outbuf;
 
@@ -78,6 +78,12 @@ struct console_port
 
   struct dlist_node node;
 };
+
+#define SET_PORT_OPEN_FLAG(p, v) ((p) -> flags = (CLEAR_BIT((p) -> flags, CONSOLE_PORT_OPEN) | ((v) << CONSOLE_PORT_OPEN_BIT)))
+
+#define IS_PORT_OPEN(p)  (((p) -> flags & CONSOLE_PORT_OPEN) == CONSOLE_PORT_OPEN)
+
+#define SET_PORT_CONSOLE_FLAG(p, v) ((p) -> flags = (CLEAR_BIT((p) -> flags, CONSOLE_PORT_CONSOLE) | ((v) << CONSOLE_PORT_CONSOLE_BIT)))
 
 struct virtio_console
 {
@@ -102,6 +108,8 @@ void
 port_write_data(struct console_port *port, u8 *data, u32 len);
 struct console_port*
 find_port_by_id(struct virtio_console *cdev, u16 id);
+struct scatter_list
+port_get_in_head(struct console_port *port);
 
 #define CHECK_F(fin, feat)                                    \
     do{                                                       \
@@ -178,16 +186,50 @@ console_handle_control_message(struct virtio_console *cdev, struct scatter_list 
 
     case VIRTIO_CONSOLE_PORT_OPEN:
     {
-      LOG("Recieved request to open port #%d\n", cmsg -> id);
-      console_send_control_message(cdev, cmsg -> id, VIRTIO_CONSOLE_PORT_OPEN, 1);
+      struct console_port *port = find_port_by_id(cdev, cmsg -> id);
+      LOG("Recieved resieved info that port #%d(%s) was %s\n", cmsg -> id, port -> name, cmsg -> value ? "OPENED":"CLOSED");
+
+      if (port)
+      {
+        SET_PORT_OPEN_FLAG(port, cmsg -> value);
+        //TODO(gio): only send this message if someone is listening on port device.
+        console_send_control_message(cdev, cmsg -> id, VIRTIO_CONSOLE_PORT_OPEN, 1);
+      }
+
     }break;
+  }
+}
+
+void
+port_handle_input(struct virtio_console *cdev, struct console_port *port)
+{
+  assert1(port);
+
+  struct scatter_list list = port_get_in_head(port);
+  port_update_inbuf(port, list.len);
+
+  //TODO(gio): check if port device is being used.
+  if (IS_PORT_OPEN(port))
+  {
+    u8 *buffer = list.buffer;
+    u32 len = list.len;
+    u8 string[len + 1];
+
+    memcpy(buffer, string, len);
+    string[len] = '\0';
+
+    LOG("Message on port %s: %s", port -> name, string);
+  }
+  else
+  {
+    //discard
   }
 }
 
 b8
 console_features(struct virtio_dev *vdev, u32 features)
 {
-  LOG("Console got features %b\n", vdev -> features);
+  LOG("Console got features %016b\n", features);
   CHECK_F(features, VIRTIO_CONSOLE_F_SIZE);
   CHECK_F(features, VIRTIO_CONSOLE_F_MULTIPORT);
   CHECK_F(features, VIRTIO_CONSOLE_F_EMERG_WRITE);
@@ -201,11 +243,7 @@ void
 write_later(u32 addr)
 {
   struct virtio_console *cdev = (struct virtio_console*)(addr);
-  u8 *sb = (u8*)kzmalloc(6);
-
-  memcpy("kata\r\n", sb, 6);
-
-  vdev_console_write(cdev, 1, sb, 9);
+  vdev_console_write(cdev, 1, (u8*)"kata\r\n", 6);
 }
 
 void
@@ -238,7 +276,8 @@ port_update_inbuf(struct console_port *port, u32 len)
   port_add_inbuf(port);
 }
 
-u8 *port_get_outbuff(struct console_port *port, u32 len)
+u8* 
+port_get_outbuff(struct console_port *port, u32 len)
 {
   struct port_buffer *buf = &port -> outbuf;
   assert1(len < buf -> len);
@@ -257,6 +296,9 @@ u8 *port_get_outbuff(struct console_port *port, u32 len)
 void
 port_write_data(struct console_port *port, u8 *data, u32 len)
 {
+  if (!IS_PORT_OPEN(port))
+    return;
+
   struct virtio_queue *vq = port -> vq_out;
   u8 *ring_buffer = port_get_outbuff(port, len);
   memcpy(data, ring_buffer, len);
@@ -295,7 +337,7 @@ console_init_port(struct virtio_console *cdev, struct console_port *port)
 
   //TODO(gio): assigns single page for each buffer may cause problems.
   init_port_buffer(&port -> inbuf);
-  init_port_buffer(&port -> outbuf); 
+  init_port_buffer(&port -> outbuf);
 
   port -> vq_in  = rq0;
   port -> vq_out = tq0;
@@ -341,15 +383,18 @@ console_setup(struct virtio_dev *vdev)
 
   virtio_read_config(vdev, sizeof(struct virtio_console_config), (u8*)&cdev -> cfg);
 
+  LOGV("%d", cdev -> cfg.nr_ports);
+
   cdev -> cmsg_port.vq_base = 2;
   console_init_port(cdev, &cdev -> cmsg_port);
+  SET_PORT_OPEN_FLAG(&cdev -> cmsg_port, 1);
 
   cdev -> cmsg_port.vq_base = 0;
   console_init_port(cdev, &cdev -> ports);
 
   console_send_control_message(cdev, 0xffffffff, VIRTIO_CONSOLE_DEVICE_READY, 1);
 
-  new_timer(5*1000 *1000, write_later, (u32)cdev);
+  // new_timer(5*1000 *1000, write_later, (u32)cdev);
   return 1;
 }
 
@@ -369,24 +414,21 @@ console_interrupt(const union biosregs *iregs, struct virtio_dev *vdev)
   struct virtio_console *cdev = vdev_to_cdev(vdev);
   UNUSED(cdev);
   u8 isr = virtio_get_isr(vdev);
-
   if ((isr & 0x1) == 0x1)
   {
-    //check cmsg port first
-    struct console_port *cport = &cdev -> cmsg_port;
-    while(port_has_unseen_buffers(cport))
-    {
-      console_handle_control_message(cdev, port_get_in_head(cport));
-    }
-
-    //now check data ports
     struct dlist_node *it;
     FOR_EACH_LIST(it, &cdev -> ports.node)
     {
       struct console_port *port = CONTAINER_OF(it, struct console_port, node);
       while(port_has_unseen_buffers(port))
       {
-        //TODO(gio): handle input
+        port_handle_input(cdev, port);
+      }
+
+      struct console_port *cport = &cdev -> cmsg_port;
+      while(port_has_unseen_buffers(cport))
+      {
+        console_handle_control_message(cdev, port_get_in_head(cport));
       }
     }
   }
@@ -421,7 +463,6 @@ vdev_console_write(struct virtio_console *cdev, u16 id, u8 *buffer, size_t len)
 
   if (port == NULL)
   {
-    LOG("NULL!\n");
     return;
   }
 

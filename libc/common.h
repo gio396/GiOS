@@ -44,6 +44,7 @@ typedef i64 size_t;
 #define CLEAR_BIT(val, bit)  ((val) & ~(bit))
 #define TOGGLE_BIT(val, bit) ((val) ^  (bit))
 #define IS_BIT_SET(val, bit) ((val) &  (bit))
+#define SET_BIT_VALUE(val, bit, v)
 
 #define ZERO_STRUCT(struct, type) memset((struct), 0, sizeof(type))
 

@@ -130,7 +130,6 @@ void
 apic_irq_handler(union biosregs *iregs)
 {
   u8 vector = apic_read_isr();
-
   iregs -> int_no = vector;
   idt_call_irq(vector, iregs);
 

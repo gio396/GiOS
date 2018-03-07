@@ -227,7 +227,7 @@ pci_dev_setup_msix(struct pci_dev *dev)
     mmap(dev -> msix.pba_addr,   1, 0);
   }
 
-  mctrl = (mctrl & ~(1 << 14));
+  mctrl = (mctrl & ~(1 << 14)) | (1 << 15);
   pci_dev_write_config_word(dev, pos + OFFSET_OF(struct msix_capability_header, message_controll), mctrl);
 }
 
@@ -339,12 +339,13 @@ driver_try_setup(struct pci_driver *driver, struct pci_dev **pdev)
   }
 
   struct pci_dev *new_dev = driver -> init(dev);
-  new_dev -> driver = driver;
   
   if (new_dev == NULL)
   {
     return 0;
   }
+
+  new_dev -> driver = driver;
 
   if (!driver -> probe(new_dev))
   {
