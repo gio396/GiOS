@@ -276,7 +276,8 @@ get_tree_node_addr(u32 node, u32 cur_depth)
 #define LC(n) (((n) * 2) + 1)
 #define RC(n) (((n) * 2) + 2)
 #define P(n)  (((n) - 1) / 2)
-#define B(n)  ((((n) + 1) ^ 0x1) - 1)
+#define B(n)  (-((-(n)) ^ 0x1))
+
 #define TREE_BASE_ADDR(i) (u8*)(BUDDY_MAX_REGION_SIZE * i)
 #define TREE_ID_FROM_ADDR(addr) (((size_t)addr - DYNAMIC_MEMORY_BASE) / BUDDY_MAX_REGION_SIZE)
 #define GET_NODE_FROM_ADDR(addr) ((size_t)addr / BUDDY_MIN_REGION_SIZE)
@@ -401,6 +402,11 @@ buddy_tree_unset_merge_nodes(struct buddy_tree *tree, u32 node)
     }
 
     node = P(node);
+    UNSET(tree, node);
+  }
+
+  if (node == 0)
+  {
     UNSET(tree, node);
   }
 }
