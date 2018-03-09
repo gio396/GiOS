@@ -137,7 +137,7 @@ void
 timer_init(u32 irq, void *interrupt_function, void *timer_count)
 {
   main_queue.head.slist_node = NULL;
-  main_queue.mem_start = kalloc();
+  main_queue.mem_start = kalloc(1);
   memset(bit_map, 0x00, BITMAP_SIZE * sizeof(u32));
 
   timer_info.irq_num = irq;

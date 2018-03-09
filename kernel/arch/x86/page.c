@@ -78,6 +78,8 @@ u32 *first_page_table;
 #define GET_VIRT_DIRECTORY_OFFSET(p)  ((u32)p >> 22)
 #define GET_VIRT_PAGE_TABLE_OFFSET(p) ((((u32)p) << 10) >> 22)
 
+void
+init_buddy_system(u32 mem_size);
 
 void 
 free_range(void *begin, void *end)
@@ -131,8 +133,7 @@ page_init()
   }
 
   first_page_table[0] = EMPTY_PAGE;
-
-  free_range((void*)(mb(4)), (void*)(mb(128)));
+  init_buddy_system(mb(64));
 }
 
 struct free_page_list
@@ -145,18 +146,16 @@ struct
   struct free_page_list *list;
 } kmem;
 
+u8*
+buddy_alloc(u32 size);
+
+void
+buddy_free(void *addr);
+
 void*
-kalloc()
+kalloc(u32 page_count)
 {
-  struct free_page_list *head;
-  head = kmem.list;
-
-  if(head)
-  {
-    kmem.list = head->next;
-  }
-
-  return (void*)(head); 
+  return buddy_alloc(kb(4) * page_count); 
 }
 
 void
@@ -165,11 +164,7 @@ kfree(void* v)
   assert1(v);
   assert1(ALIGNED((u32)v, kb(4)));
 
-  struct free_page_list *head;
-
-  head = (struct free_page_list*)(v);
-  head->next = kmem.list;
-  kmem.list = head;
+  buddy_free(v);
 }
 
 void
@@ -184,7 +179,7 @@ mmap(void *paddr, u32 size, u8 flags)
 
   if (page_directory_entry[pgindex] == 0)
   {
-    void*  new_page_table = kalloc();
+    void*  new_page_table = kalloc(1);
     page_directory_entry[pgindex] = EMPTY_PRESENT((u32)new_page_table);
     memset(new_page_table, 0, kb(4));
   }
@@ -204,4 +199,232 @@ mmap(void *paddr, u32 size, u8 flags)
       page_table[page_table_offset + i] = EMPTY_PRESENT((u32)paddr + 0x1000 * i);
     }
   }
+}
+
+#define DYNAMIC_MEMORY_BASE   mb(16)
+#define BUDDY_MIN_REGION_SIZE kb(4)
+#define BUDDY_MAX_REGION_SIZE mb(8)
+//NOTE(gio): change max depth when chaning regions sizes.
+#define BUDDY_MAX_DEPTH       (12)
+#define BUDDY_NODES_COUNT     ((1 << BUDDY_MAX_DEPTH) - 1)
+#define BYTES_PER_BUDDY_TREE  ((BUDDY_NODES_COUNT + 7) >> 3)
+
+struct buddy_tree
+{
+  char tree[BYTES_PER_BUDDY_TREE];
+};
+
+struct buddy_system
+{
+  u32 buddy_count;
+  u32 mem_size;
+  struct buddy_tree array[];
+};
+
+static u32
+get_buddy_count(u32 mem_size)
+{
+  u32 buddy_count = (mem_size + BUDDY_MAX_REGION_SIZE - 1) / BUDDY_MAX_REGION_SIZE;
+  return buddy_count;
+}
+
+static u32
+lzcnt(u32 val)
+{
+  u32 res;
+  __lzcnt(res, val);
+
+  return res;
+}
+
+static i8
+get_tree_node(struct buddy_tree *tree, u32 idx)
+{
+  u32 byte = idx / 8;
+  u32 offset = idx % 8;
+
+  return (tree -> tree[byte] >> offset & 0x1);
+}
+
+void
+set_tree_node(struct buddy_tree *tree, u32 idx, u32 val)
+{
+  u32 byte = idx / 8;
+  u32 offset = idx % 8;
+
+  if (val)
+  {
+    tree -> tree[byte] = SET_BIT(tree -> tree[byte], 1 << offset);
+  }
+  else
+  {
+    tree -> tree[byte] = CLEAR_BIT(tree -> tree[byte], 1 << offset);
+  }
+}
+
+static u8*
+get_tree_node_addr(u32 node, u32 cur_depth)
+{
+  u32 size_per_node = BUDDY_MIN_REGION_SIZE << (BUDDY_MAX_DEPTH - cur_depth);
+  u32 ofsset_from_first = node - ((1 << (cur_depth - 1)) - 1);
+  return (u8*)(size_per_node * ofsset_from_first);
+}
+
+#define IS_SET(tree, idx) get_tree_node(tree, idx)
+#define SET(tree, idx)    set_tree_node(tree, idx, 1)
+#define UNSET(tree, idx)  set_tree_node(tree, idx, 0)
+#define LC(n) (((n) * 2) + 1)
+#define RC(n) (((n) * 2) + 2)
+#define P(n)  (((n) - 1) / 2)
+#define B(n)  ((((n) + 1) ^ 0x1) - 1)
+#define TREE_BASE_ADDR(i) (u8*)(BUDDY_MAX_REGION_SIZE * i)
+#define TREE_ID_FROM_ADDR(addr) (((size_t)addr - DYNAMIC_MEMORY_BASE) / BUDDY_MAX_REGION_SIZE)
+#define GET_NODE_FROM_ADDR(addr) ((size_t)addr / BUDDY_MIN_REGION_SIZE)
+
+i8
+buddy_tree_try_alloc_depth(struct buddy_tree *tree, i32 depth, u32 *addr)
+{
+  struct 
+  {
+    i32 depth;
+    u32 node;
+  } stack[2 * BUDDY_MAX_DEPTH];
+  u32 shead = 1;
+  stack[0].depth = 1;
+  stack[0].node = 0;
+
+  #define STACK_POP(n, d) do  \
+  {                           \
+    shead--;                  \
+    (n) = stack[shead].node;  \
+    (d) = stack[shead].depth; \
+  } while (0)                 \
+
+  #define STACK_PUSH(n, d) do \
+  {                           \
+    stack[shead].node = (n);  \
+    stack[shead].depth = (d); \
+    shead++;                  \
+  } while (0)                 \
+
+  while (shead > 0)
+  {
+    u32 node;
+    i32 cur_depth;
+    STACK_POP(node, cur_depth);
+
+    if (depth == cur_depth)
+    {
+      if (!IS_SET(tree, node))
+      {
+        SET(tree, node);
+        *addr = (size_t)get_tree_node_addr(node, cur_depth);
+        return 1;
+      }
+
+      continue;
+    }
+
+    u32 lc = LC(node);
+    u32 rc = RC(node);
+
+    if (!IS_SET(tree, node))
+    {
+      SET(tree, node);
+      STACK_PUSH(lc, cur_depth + 1);
+      continue;
+    }
+
+    if (!IS_SET(tree, lc) && !IS_SET(tree, rc))
+      continue;
+
+    if (IS_SET(tree, rc))
+    {
+      STACK_PUSH(lc, cur_depth + 1);
+      STACK_PUSH(rc, cur_depth + 1);
+    }
+    else
+    {
+      STACK_PUSH(rc, cur_depth + 1);
+      STACK_PUSH(lc, cur_depth + 1);
+    }
+  }
+
+  return 0;
+}
+
+u8*
+buddy_alloc_depth(u32 depth)
+{
+  struct buddy_system *bs = (struct buddy_system*)DYNAMIC_MEMORY_BASE;
+
+  for (u32 i = 0; i < bs -> buddy_count; i++)
+  {
+    u32 addr;
+    if (buddy_tree_try_alloc_depth(&bs -> array[i], depth, &addr))
+    {
+      return TREE_BASE_ADDR(i) + addr;
+    }
+  }
+
+  assert1(0);
+  return NULL;
+}
+
+u8*
+buddy_alloc(u32 size)
+{
+  u32 logsize = lzcnt(size - 1) + 1;
+  u32 asize = (1 << ((lzcnt(size - 1) + 1)));
+  asize = asize < BUDDY_MIN_REGION_SIZE ? BUDDY_MIN_REGION_SIZE : asize;
+
+  i32 depth = BUDDY_MAX_DEPTH - ((i32)logsize - 12);
+
+  assert1(depth > 0);
+  u8 *addr = DYNAMIC_MEMORY_BASE + buddy_alloc_depth(depth);
+  return addr;
+}
+
+void
+buddy_tree_free_addr(struct buddy_tree *tree, void *addr)
+{
+  u8 *base_addr = TREE_BASE_ADDR(TREE_ID_FROM_ADDR(addr));
+  u8 *relative_addr = (u8*)((u8*)addr - base_addr);
+  u32 node = GET_NODE_FROM_ADDR(relative_addr);
+
+  while (node != 0)
+  {
+    if (IS_SET(tree, node))
+    {
+      UNSET(tree, node);
+      return;
+    }
+
+    node = P(node);
+  }
+}
+
+void
+buddy_free(void *addr)
+{
+  u32 id = TREE_ID_FROM_ADDR(addr);
+  struct buddy_system *bs = (struct buddy_system*)DYNAMIC_MEMORY_BASE;
+  struct buddy_tree *tree = &bs -> array[id];
+
+  buddy_tree_free_addr(tree, addr);
+}
+
+void
+init_buddy_system(u32 mem_size)
+{
+  // u32 *buddy_base = (u32*)DYNAMIC_MEMORY_BASE;
+  u32 buddy_count = get_buddy_count(mem_size);
+  u32 buddy_required_size = ALIGN(buddy_count * sizeof(struct buddy_tree) + sizeof(struct buddy_system), kb(4));
+  memset((u8*)DYNAMIC_MEMORY_BASE, 0, buddy_required_size);
+
+  struct buddy_system *bs = (struct buddy_system*)DYNAMIC_MEMORY_BASE;
+  bs -> buddy_count = buddy_count;
+  bs -> mem_size = mem_size;
+
+  buddy_alloc(buddy_required_size);
 }

@@ -59,7 +59,7 @@ struct port_buffer
 void
 init_port_buffer(struct port_buffer *buffer)
 {
-  buffer -> base = kalloc();
+  buffer -> base = kalloc(1);
   buffer -> len = kb(4);
 }
 

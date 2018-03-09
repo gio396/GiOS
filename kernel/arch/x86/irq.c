@@ -31,7 +31,7 @@ typedef void(*PROCIRQHandler)(const union biosregs *reg);
 
 void (*irq_handler_pointer)(union biosregs *iregs) = NULL;
 
-global void *irq_handlers[] = 
+global void *basic_irq_handlers[32] = 
 {
   0, 0, 0, 0, 0, 0, 0, 0, 
   0, 0, 0, 0, 0, 0, 0, 0,
@@ -43,21 +43,21 @@ global void *irq_handlers[] =
 void 
 irq_set_handler(u8 num, void *handler)
 {
-  irq_handlers[num] = handler;
+  basic_irq_handlers[num] = handler;
 }
 
 //same as calling irq_set_handler(num, 0);
 void
 irq_clear_handler(u8 num)
 {
-  irq_handlers[num] = 0;
+  basic_irq_handlers[num] = 0;
 }
 
 void
 irq_common_handler(const union biosregs *reg)
 {
   u32 irq_handler_index = reg->int_no - 32;
-  PROCIRQHandler irq_handler = (PROCIRQHandler)irq_handlers[irq_handler_index];
+  PROCIRQHandler irq_handler = (PROCIRQHandler)basic_irq_handlers[irq_handler_index];
 
   if (irq_handler)
   {

@@ -3,6 +3,7 @@
 #include <arch/x86/framebuffer.h>
 #include <arch/x86/register.h>
 #include <arch/x86/io.h>
+#include <arch/x86/page.h>
 
 #include <string.h>
 
@@ -13,7 +14,7 @@ struct irq_handler
   PROCIRQHandler callback;
 };
 
-struct irq_handler irq_handlers[IDT_SIZE];
+struct irq_handler *irq_handlers;
 
 #define def_isr(num) extern void isr##num(void)
 
@@ -154,6 +155,7 @@ idt_install()
   
   idt_load((size_t)&idtp);
   printk(&state, "Pushed IDTP at 0x%8X\n", (size_t)&idtp);
+  irq_handlers = kalloc(1);
 }
 
 void

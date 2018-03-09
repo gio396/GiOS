@@ -203,7 +203,7 @@ terminal_save_state(struct terminal_state *state)
   }
   else
   {
-    tbl_new_head = (struct terminal_back_list*)kalloc(); 
+    tbl_new_head = (struct terminal_back_list*)kalloc(1); 
     new_head = &tbl_new_head->node;
 
     dlist_insert_head(head_root, new_head);

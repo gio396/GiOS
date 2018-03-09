@@ -39,7 +39,7 @@ get_allign_offset(void *addr, size_t allignment, size_t offset)
 b8
 free_list_add_page()
 {
-  void *next_page = kalloc();
+  void *next_page = kalloc(1);
 
   if (!next_page)
     return 0;

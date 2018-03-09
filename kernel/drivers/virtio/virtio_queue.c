@@ -36,8 +36,7 @@ virtio_create_queue(u32 len)
 
   u32 sz = virtq_size(len);
 
-  void* buffer = (void*)(0xde00000 + offset);
-  mmap(buffer, sz, 0);
+  void *buffer = kalloc((sz + kb(4) - 1) / kb(4));
   memset(buffer, 0, sz);
   offset += sz;
 

@@ -35,12 +35,15 @@ mmap(void *paddr, u32 size, u8 flags);
 // alocates 4kb phys memory and returns adresss
 // 1 to 1 mapping
 void*
-kalloc();
+kalloc(u32 page_count);
 
 
 //frees 4kb of phys memory must be used on pointer returned by kalloc
 //1 to 1 mapping
 void
 kfree(void *page);
+
+void
+init_buddy_system(u32 mem_size);
 
 #endif
