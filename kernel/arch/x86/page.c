@@ -382,7 +382,27 @@ buddy_alloc(u32 size)
 
   assert1(depth > 0);
   u8 *addr = DYNAMIC_MEMORY_BASE + buddy_alloc_depth(depth);
+
   return addr;
+}
+
+void
+buddy_tree_unset_merge_nodes(struct buddy_tree *tree, u32 node)
+{
+  UNSET(tree, node);
+
+  while (node)
+  {
+    u32 buddy = B(node);
+
+    if (IS_SET(tree, buddy))
+    {
+      break;
+    }
+
+    node = P(node);
+    UNSET(tree, node);
+  }
 }
 
 void
@@ -396,7 +416,7 @@ buddy_tree_free_addr(struct buddy_tree *tree, void *addr)
   {
     if (IS_SET(tree, node))
     {
-      UNSET(tree, node);
+      buddy_tree_unset_merge_nodes(tree, node);
       return;
     }
 
