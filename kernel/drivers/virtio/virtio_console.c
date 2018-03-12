@@ -108,7 +108,7 @@ void
 port_write_data(struct console_port *port, u8 *data, u32 len);
 struct console_port*
 find_port_by_id(struct virtio_console *cdev, u16 id);
-struct scatter_list
+struct scatterlist
 port_get_in_head(struct console_port *port);
 
 #define CHECK_F(fin, feat)                                    \
@@ -145,9 +145,9 @@ console_send_control_message(struct virtio_console *cdev, u32 id, u16 event, u16
 }
 
 void
-console_handle_control_message(struct virtio_console *cdev, struct scatter_list list)
+console_handle_control_message(struct virtio_console *cdev, struct scatterlist list)
 {
-  u8 *buffer = list.buffer;
+  u8 *buffer = sl_get_buffer(&list);
   struct virtio_console_control *cmsg = (struct virtio_console_control*)buffer;
   struct console_port *cport = &cdev -> cmsg_port;
   struct virtio_queue *q = cport -> vq_in;
@@ -205,13 +205,14 @@ port_handle_input(struct virtio_console *cdev, struct console_port *port)
 {
   assert1(port);
 
-  struct scatter_list list = port_get_in_head(port);
+  struct scatterlist list = port_get_in_head(port);
   port_update_inbuf(port, list.len);
+
 
   //TODO(gio): check if port device is being used.
   if (IS_PORT_OPEN(port))
   {
-    u8 *buffer = list.buffer;
+    u8 *buffer = sl_get_buffer(&list);
     u32 len = list.len;
     u8 string[len + 1];
 
@@ -352,6 +353,8 @@ console_add_port(struct virtio_console *cdev, u16 id)
   return res;
 }
 
+#include <timer.h>
+
 i8
 port_has_unseen_buffers(struct console_port *port)
 {
@@ -360,7 +363,7 @@ port_has_unseen_buffers(struct console_port *port)
   return virtio_queue_has_unseen_buffers(vq);
 }
 
-struct scatter_list
+struct scatterlist
 port_get_in_head(struct console_port *port)
 {
   struct virtio_queue *vq = port -> vq_in;

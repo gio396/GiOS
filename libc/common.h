@@ -44,7 +44,6 @@ typedef i64 size_t;
 #define CLEAR_BIT(val, bit)  ((val) & ~(bit))
 #define TOGGLE_BIT(val, bit) ((val) ^  (bit))
 #define IS_BIT_SET(val, bit) ((val) &  (bit))
-#define SET_BIT_VALUE(val, bit, v)
 
 #define ZERO_STRUCT(struct, type) memset((struct), 0, sizeof(type))
 
@@ -53,8 +52,8 @@ typedef i64 size_t;
 
 #define NULL (void*)(0)
 
-// #define min(lhs, rhs) ((lhs) < (rhs) ? (lhs) : (rhs))
-// #define max(lhs, rhs) ((lhs) > (rhs) ? (lhs) : (rhs))
+#define min(lhs, rhs) ((lhs) < (rhs) ? (lhs) : (rhs))
+#define max(lhs, rhs) ((lhs) > (rhs) ? (lhs) : (rhs))
 
 #ifdef __GIOS_DEBUG__
 #define LOG(...) printk(&state, __VA_ARGS__)

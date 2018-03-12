@@ -43,7 +43,6 @@ create_mem_list_node()
   return node;
 }
 
-
 force_inline i8
 bitmap_is_set(struct mem_list_node *node, u32 slab)
 {

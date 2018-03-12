@@ -77,26 +77,27 @@ virtio_queue_enqueue(struct virtio_queue *q, u8 *buffer, size_t len, u8 directio
 
   q -> next_buffer = buffer_index;
 
-  if (!direction)
-  {
-    q -> last_buffer_seen = buffer_index;
-  }
+  // NOTE(gio): virtqs are only unidirectional.
+  // if (!direction)
+  // {
+  //   q -> last_buffer_seen = buffer_index;
+  // }
 
   q -> num_added++;
 }
 
-struct scatter_list
+struct scatterlist
 virtio_queue_dequeue(struct virtio_queue *q)
 {
-  struct scatter_list res = {};
+  struct scatterlist res;
+  sl_list_init(&res, 1);
   u16 buffer_index = q -> last_buffer_seen % q -> size;
 
   struct virtq_used_elem *elem = &q -> used -> ring[buffer_index];
   u32 len = elem -> len;
   u8  *buffer = (u8*)(size_t)q -> desc[buffer_index].addr;
 
-  res.len = len;
-  res.buffer = buffer;
+  sl_bind_buffer(&res, buffer, len);
   q -> last_buffer_seen++;
 
   return res;

@@ -3,17 +3,10 @@
 
 #include <common.h>
 #include <list.h>
+#include <scatterlist.h>
 
 #define VQ_IN 1
 #define VQ_OUT 0
-
-struct scatter_list
-{
-  u8  *buffer;
-  u32 len;
-
-  struct dlist_node node;
-};
 
 struct virtq_desc
 {
@@ -60,16 +53,16 @@ struct virtio_queue
   struct virtq_avail *avail;
   struct virtq_used  *used;
 
-  void(*handle_input)(struct virtio_queue*, struct scatter_list*);
+  void(*handle_input)(struct virtio_queue*, struct scatterlist*);
 };
 
 struct virtio_queue*
 virtio_create_queue(u32 size);
 
 void
-virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t len, u8 direction);
+virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t last_buffer_seen, u8 direction);
 
-struct scatter_list
+struct scatterlist
 virtio_queue_dequeue(struct virtio_queue *q); 
 
 void
