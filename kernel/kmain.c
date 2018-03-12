@@ -123,4 +123,9 @@ kmain(u32 mboot_magic, struct multiboot_info *mboot_info)
 
   //NOTE(gio): maybe move to core1 init!
   pci_enum();
+
+  for(i32 i = 0; i < 1024; i++)
+  {
+    kzmalloc(i);
+  }
 }

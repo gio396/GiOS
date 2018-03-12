@@ -37,6 +37,8 @@ mmap(void *paddr, u32 size, u8 flags);
 void*
 kalloc(u32 page_count);
 
+void*
+kballoc(size_t size);
 
 //frees 4kb of phys memory must be used on pointer returned by kalloc
 //1 to 1 mapping

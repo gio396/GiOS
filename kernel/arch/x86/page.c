@@ -133,7 +133,7 @@ page_init()
   }
 
   first_page_table[0] = EMPTY_PAGE;
-  init_buddy_system(mb(64));
+  init_buddy_system(mb(128));
 }
 
 struct free_page_list
@@ -156,6 +156,12 @@ void*
 kalloc(u32 page_count)
 {
   return buddy_alloc(kb(4) * page_count); 
+}
+
+void*
+kballoc(size_t size)
+{
+  return buddy_alloc(size);
 }
 
 void

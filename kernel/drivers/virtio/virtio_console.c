@@ -240,13 +240,6 @@ console_features(struct virtio_dev *vdev, u32 features)
 }
 
 void
-write_later(u32 addr)
-{
-  struct virtio_console *cdev = (struct virtio_console*)(addr);
-  vdev_console_write(cdev, 1, (u8*)"kata\r\n", 6);
-}
-
-void
 port_add_inbuf(struct console_port *port)
 {
   struct virtio_queue *vq = port -> vq_in;
@@ -394,7 +387,6 @@ console_setup(struct virtio_dev *vdev)
 
   console_send_control_message(cdev, 0xffffffff, VIRTIO_CONSOLE_DEVICE_READY, 1);
 
-  // new_timer(5*1000 *1000, write_later, (u32)cdev);
   return 1;
 }
 
