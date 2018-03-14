@@ -62,43 +62,64 @@ virtio_create_queue(u32 len)
 }
 
 void
-virtio_queue_enqueue(struct virtio_queue *q, u8 *buffer, size_t len, u8 direction)
+virtio_queue_enqueue(struct virtio_queue *q, struct scatterlist *sl)
 {
   u16 index = q -> avail -> idx  % q -> size;
   u16 buffer_index = q -> next_buffer;
-  u16 next_buffer_index = (buffer_index + 1) % q->size;
+  u16 next_buffer_index;
+  u16 last_buffer = buffer_index;
 
   q -> avail -> ring[index] = buffer_index;
-  q -> desc[buffer_index].flags = direction ? VIRTQ_DESC_F_WRITE : 0;
-  q -> desc[buffer_index].next = next_buffer_index;
-  q -> desc[buffer_index].len = len;
-  q -> desc[buffer_index].addr = (size_t)(buffer);
-  buffer_index = next_buffer_index;
 
+  struct scatterlist_iter sliter;
+  slit_begin(&sliter, sl);
+
+  while (slit_next(&sliter))
+  {
+    u8 *buffer = sliter.buffer;
+    u32 len = sliter.len;
+    u8 direction = SLITER_GET_FLAG_VALUE(&sliter, SL_USER_0);
+
+    next_buffer_index = (buffer_index + 1) % q -> size;
+
+    q -> desc[buffer_index].flags = (direction ? VIRTQ_DESC_F_WRITE : 0);
+    q -> desc[buffer_index].flags |= VIRTQ_DESC_F_NEXT;
+    q -> desc[buffer_index].next = next_buffer_index;
+    q -> desc[buffer_index].len = len;
+    q -> desc[buffer_index].addr = (size_t)(buffer);
+
+    last_buffer = buffer_index;
+    buffer_index = next_buffer_index;
+    q -> num_added++;
+  }
+
+  q -> desc[last_buffer].flags &= ~VIRTQ_DESC_F_NEXT;
   q -> next_buffer = buffer_index;
-
-  // NOTE(gio): virtqs are only unidirectional.
-  // if (!direction)
-  // {
-  //   q -> last_buffer_seen = buffer_index;
-  // }
-
-  q -> num_added++;
 }
 
-struct scatterlist
+struct scatterlist*
 virtio_queue_dequeue(struct virtio_queue *q)
 {
-  struct scatterlist res;
-  sl_list_init(&res, 1);
-  u16 buffer_index = q -> last_buffer_seen % q -> size;
+  u32 heads = virtio_queue_num_heads(q);
+  struct scatterlist *res = (struct scatterlist*)kzmalloc(sizeof(struct scatterlist) * heads);
+  sl_list_init(res, heads);
+  u16 buffer_index;
 
-  struct virtq_used_elem *elem = &q -> used -> ring[buffer_index];
-  u32 len = elem -> len;
-  u8  *buffer = (u8*)(size_t)q -> desc[buffer_index].addr;
+  do
+  {
+    buffer_index = q -> last_buffer_seen % q -> size;
 
-  sl_bind_buffer(&res, buffer, len);
-  q -> last_buffer_seen++;
+    struct virtq_used_elem *elem = &q -> used -> ring[buffer_index];
+
+    u32 len = elem -> len;
+    u8  *buffer = (u8*)(size_t)q -> desc[buffer_index].addr;
+    q -> last_buffer_seen++;
+
+    sl_bind_buffer(res, buffer, len);
+    res++;
+  } while ((q -> desc[buffer_index].flags & VIRTQ_DESC_F_NEXT) != 0);
+
+  sl_make_last(--res);
 
   return res;
 }
@@ -120,6 +141,7 @@ virtio_queue_notify(struct virtio_queue *q)
 {
   u32 iobase = q -> vdev -> iobase;
   u32 idx = q -> idx;
+
   asm volatile("mfence" ::: "memory");
   virtio_header_set_word(iobase, OFFSET_OF(struct virtio_header, queue_notify), (u8*)&idx); 
 }

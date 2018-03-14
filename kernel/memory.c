@@ -30,6 +30,7 @@ struct alloc_header
   size_t count;
   size_t magic;
 };
+#define ALLOC_HEADER_SIZE 1
 
 struct mem_list_node*
 create_mem_list_node()
@@ -62,6 +63,15 @@ bitmap_set(struct mem_list_node *node, u32 slab)
 }
 
 force_inline void
+bitmap_unset(struct mem_list_node *node, u32 slab)
+{
+  u32 idx = slab / 8;
+  u32 bit = slab & 8;
+
+  node -> bitmap[idx] = SET_BIT(node -> bitmap[idx], (1 << bit));
+}
+
+force_inline void
 mem_list_mark_nodes(struct mem_list_node *node, u32 begin, u32 end)
 {
   for (u32 i = begin; i < end; i++)
@@ -70,6 +80,14 @@ mem_list_mark_nodes(struct mem_list_node *node, u32 begin, u32 end)
   }
 }
 
+force_inline void
+mem_list_unmark_nodes(struct mem_list_node *node, u32 begin, u32 end)
+{
+  for (u32 i = begin  ; i < end; i++)
+  {
+    bitmap_unset(node, i);
+  }
+}
 
 local u32
 find_cont_slabs_node(struct mem_list_node *node, u32 slab_count)
@@ -141,26 +159,36 @@ find_create_cont_slabs(u32 slab_count)
   return addr_from_slab_id(node, 0);
 }
 
+local u32
+get_slab_from_addr(struct mem_list_node *node, void *addr)
+{
+  assert1(((size_t)addr & (SLAB_SIZE - 1)) == 0);
+  return ((size_t)node -> slabs - (size_t)addr) / SLAB_SIZE;
+}
+
 local void*
 allocate_slabs(size_t size)
 {
-  u32 slab_count = (size + SLAB_SIZE - 1) / SLAB_SIZE + MEM_LIST_HEADER_SIZE;
+  u32 slab_count = (size + SLAB_SIZE - 1) / SLAB_SIZE + ALLOC_HEADER_SIZE;
   size_t base_addr = find_create_cont_slabs(slab_count);
 
   struct alloc_header *header = (struct alloc_header*)base_addr;
   header -> count = slab_count;
-  header -> magic = base_addr ^ size;
+  header -> magic = base_addr ^ slab_count;
 
-  return (void*)(base_addr + SLAB_SIZE * MEM_LIST_HEADER_SIZE);
+  return (void*)(base_addr + SLAB_SIZE * ALLOC_HEADER_SIZE);
 }
 
 local void*
 internal_allocate(size_t size)
 {
-  i8 *addr;
+  u8 *addr;
   if (size > kb(2))
   {
-    addr =  kballoc(size);
+    addr =  kballoc(size + ALLOC_HEADER_SIZE);
+    struct alloc_header *header = (struct alloc_header*)addr;
+    header -> count = size + ALLOC_HEADER_SIZE * SLAB_SIZE;;
+    header -> magic = (size_t)addr ^ size;
   }
   else
   {
@@ -168,6 +196,33 @@ internal_allocate(size_t size)
   }
 
   return addr;
+}
+
+local void
+free_slabs(void *addr, u32 count)
+{
+  size_t node_addr = (size_t)addr & (~kb(4));
+  struct mem_list_node *node = (struct mem_list_node*)node_addr;
+
+  u32 base_slab = get_slab_from_addr(node, addr);
+  mem_list_unmark_nodes(node, base_slab, base_slab + count);
+}
+
+local void
+internal_free(void *addr)
+{
+  void *shift_addr = (u8*)addr - ALLOC_HEADER_SIZE * SLAB_SIZE;
+  struct alloc_header *header = (struct alloc_header *)(shift_addr);
+  assert1(header -> magic == ((size_t)shift_addr ^ header -> count));
+
+  if (header -> count > kb(2) / SLAB_SIZE + 1)
+  {
+    kfree(shift_addr);
+  }
+  else
+  {
+    free_slabs(shift_addr, header -> count);
+  }
 }
 
 void*
@@ -183,6 +238,12 @@ kzmalloc(size_t size)
   memset(ptr, 0, size);
 
   return ptr;
+}
+
+void
+kmfree(void *addr)
+{
+  internal_free(addr);
 }
 
 u64

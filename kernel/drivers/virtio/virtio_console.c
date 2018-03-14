@@ -108,7 +108,7 @@ void
 port_write_data(struct console_port *port, u8 *data, u32 len);
 struct console_port*
 find_port_by_id(struct virtio_console *cdev, u16 id);
-struct scatterlist
+struct scatterlist*
 port_get_in_head(struct console_port *port);
 
 #define CHECK_F(fin, feat)                                    \
@@ -145,15 +145,16 @@ console_send_control_message(struct virtio_console *cdev, u32 id, u16 event, u16
 }
 
 void
-console_handle_control_message(struct virtio_console *cdev, struct scatterlist list)
+console_handle_control_message(struct virtio_console *cdev, struct scatterlist* list)
 {
-  u8 *buffer = sl_get_buffer(&list);
+  u8 *buffer = sl_get_buffer(list);
   struct virtio_console_control *cmsg = (struct virtio_console_control*)buffer;
   struct console_port *cport = &cdev -> cmsg_port;
   struct virtio_queue *q = cport -> vq_in;
+
   assert1(cmsg -> id < q -> size);
 
-  port_update_inbuf(cport, list.len);
+  port_update_inbuf(cport, list -> len);
 
   switch (cmsg -> event)
   {
@@ -176,7 +177,7 @@ console_handle_control_message(struct virtio_console *cdev, struct scatterlist l
       }
 
       LOG("Recieved port name from device for port #%d\n", cmsg -> id);
-      u16 name_len = list.len - sizeof(struct virtio_console_control);
+      u16 name_len = list -> len - sizeof(struct virtio_console_control);
       u8 *name = (u8*)kzmalloc(name_len);
       memcpy(buffer + sizeof(struct virtio_console_control), name,  name_len);
       name[name_len] = '\0';
@@ -205,15 +206,15 @@ port_handle_input(struct virtio_console *cdev, struct console_port *port)
 {
   assert1(port);
 
-  struct scatterlist list = port_get_in_head(port);
-  port_update_inbuf(port, list.len);
+  struct scatterlist *list = port_get_in_head(port);
+  port_update_inbuf(port, list -> len);
 
 
   //TODO(gio): check if port device is being used.
   if (IS_PORT_OPEN(port))
   {
-    u8 *buffer = sl_get_buffer(&list);
-    u32 len = list.len;
+    u8 *buffer = sl_get_buffer(list);
+    u32 len = list -> len;
     u8 string[len + 1];
 
     memcpy(buffer, string, len);
@@ -225,6 +226,8 @@ port_handle_input(struct virtio_console *cdev, struct console_port *port)
   {
     //discard
   }
+
+  kmfree(list);
 }
 
 b8
@@ -249,7 +252,12 @@ port_add_inbuf(struct console_port *port)
   u8 *buffer_base = buf -> base + buf -> used;
   u32 len = buf -> len - buf -> used;
 
-  virtio_queue_enqueue(vq, buffer_base, len, VQ_IN);
+  struct scatterlist sl;
+  sl_list_init(&sl, 1);
+  sl_bind_buffer(&sl, buffer_base, len);
+  sl_bind_attribute(&sl, SL_USER_0, VQ_IN);
+
+  virtio_queue_enqueue(vq, &sl);
   virtio_queue_kick(vq);
 }
 
@@ -297,7 +305,13 @@ port_write_data(struct console_port *port, u8 *data, u32 len)
   u8 *ring_buffer = port_get_outbuff(port, len);
   memcpy(data, ring_buffer, len);
 
-  virtio_queue_enqueue(vq, ring_buffer, len, VQ_OUT);
+  struct scatterlist sl;
+  sl_list_init(&sl, 1);
+
+  sl_bind_buffer(&sl, ring_buffer, len);
+  sl_bind_attribute(&sl, SL_USER_0, VQ_OUT);
+
+  virtio_queue_enqueue(vq, &sl);
   virtio_queue_kick(vq);
 }
 
@@ -363,7 +377,7 @@ port_has_unseen_buffers(struct console_port *port)
   return virtio_queue_has_unseen_buffers(vq);
 }
 
-struct scatterlist
+struct scatterlist*
 port_get_in_head(struct console_port *port)
 {
   struct virtio_queue *vq = port -> vq_in;
@@ -423,7 +437,9 @@ console_interrupt(const union biosregs *iregs, struct virtio_dev *vdev)
       struct console_port *cport = &cdev -> cmsg_port;
       while(port_has_unseen_buffers(cport))
       {
-        console_handle_control_message(cdev, port_get_in_head(cport));
+        struct scatterlist *list = port_get_in_head(cport);
+        console_handle_control_message(cdev, list);
+        kmfree(list);
       }
     }
   }

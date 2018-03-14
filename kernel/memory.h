@@ -12,6 +12,9 @@ kmalloc(size_t size);
 void*
 kzmalloc(size_t size);
 
+void
+kmfree(void *addr);
+
 u64
 tbeqw(u64 val);
 

@@ -6,6 +6,7 @@
 #include <arch/x86/page.h>
 
 #include <drivers/pci/pci.h>
+#include <drivers/virtio/virtio_queue.h>
 
 #include <macros.h>
 #include <list.h>
@@ -59,26 +60,25 @@ struct virtio_block_config
   u8 writeback;
 };
 
-struct virtio_block_req
+struct virtio_block_req_out_hdr
 {
   u32 type;
   u32 reserved;
   u64 sector;
-  u8 data[512];
-  u8 status;
 };
 
-struct virtio_block_req_buffer
+struct virtio_block_req_block
 {
-  u32 head;
-  u32 tail;
-  u8 freelist[REQUEST_BUFFER_SIZE];
-  struct virtio_block_req *request_buffer;
+  u8 block[512];
+};
+
+struct virtio_block_req_in_hdr
+{
+  u8 status;
 };
 
 struct block_request_port
 {
-  struct virtio_block_req_buffer buffer;
   struct virtio_queue *reqq;
 };
 
@@ -105,89 +105,88 @@ vdev_to_bdev(struct virtio_dev *dev)
 }
 
 void
-port_buffer_init(struct block_request_port *rport)
-{
-  struct virtio_block_req_buffer *buffer = &rport -> buffer;
-  buffer -> head = 0; 
-  buffer -> tail = REQUEST_BUFFER_SIZE;
-
-  for (i32 i = 0; i < REQUEST_BUFFER_SIZE; i++)
-  {
-    buffer -> freelist[i] = i;
-  }
-
-  buffer -> request_buffer = (struct virtio_block_req *)kballoc(REQUEST_BUFFER_SIZE * sizeof(struct virtio_block_req));
-}
-
-struct virtio_block_req*
-port_get_free_request(struct block_request_port *rport)
-{
-  struct virtio_block_req_buffer *buffer = &rport -> buffer;
-  if (buffer -> head == buffer -> tail)
-  {
-    return NULL;
-  }
-
-  struct virtio_block_req *res = &buffer -> request_buffer[buffer -> freelist[buffer -> head]];
-  buffer -> head = (buffer -> head + 1) % REQUEST_BUFFER_SIZE;
-
-  return res;
-}
-
-void
-prot_push_free_request(struct block_request_port *rport, struct virtio_block_req *req)
-{
-  struct virtio_block_req_buffer *buffer = &rport -> buffer;
-  u32 idx = (req - buffer -> request_buffer) / sizeof(struct virtio_block_req);
-
-  buffer -> freelist[buffer -> tail] = idx;
-  buffer -> tail = (buffer -> tail + 1) % REQUEST_BUFFER_SIZE;
-
-  memset(req, 0, sizeof(struct virtio_block_req));
-}
-
-void
 block_request_port_init(struct virtio_block *bdev)
 {
   struct block_request_port *rport = &bdev -> rport;
-  port_buffer_init(rport);
+   struct virtio_queue *reqq = virtio_create_queue(virtio_get_queue_size(&bdev -> vdev, 0));
 
- struct virtio_queue *reqq = virtio_create_queue(virtio_get_queue_size(&bdev -> vdev, 0));
   virtio_set_queue(&bdev -> vdev, 0, reqq);
-
- rport -> reqq = reqq;
+  rport -> reqq = reqq;
 }
 
 void
-vdev_read_request(struct virtio_block *vdev, u32 sector)
+vdev_read_request(struct virtio_block *vdev, u32 sector, u8 *buffer, size_t len)
 {
   struct block_request_port *rport = &vdev -> rport;
-  struct virtio_block_req *req = port_get_free_request(rport);
+  u8 *hdrs = kzmalloc(sizeof(struct virtio_block_req_in_hdr) + sizeof(struct virtio_block_req_out_hdr));
 
-  assert1(req);
+  struct virtio_block_req_out_hdr *ohdr = (struct virtio_block_req_out_hdr*)hdrs;
+  struct virtio_block_req_in_hdr  *ihdr = (struct virtio_block_req_in_hdr*)(ohdr + 1);
 
-  req -> type = VIRTIO_BLK_T_IN;
-  req -> sector = sector;
+  u32 sector_count = (len + 511) / 512;
+  u32 sl_size = sector_count + 2;
+
+  ohdr -> type = VIRTIO_BLK_T_IN;
+  ohdr -> sector = sector;
+
+  LOGV("%p", ohdr);
+  LOGV("%p", ihdr);
+  LOGV("%p", buffer);
 
   struct virtio_queue *reqq = rport -> reqq;
-  virtio_queue_enqueue(reqq, (u8*)req, sizeof(struct virtio_block_req), VQ_OUT);
+
+  struct scatterlist sl[sl_size];
+  sl_list_init(sl, sl_size);
+
+  sl_bind_buffer(&sl[0], ohdr, sizeof(struct virtio_block_req_out_hdr));
+  sl_bind_attribute(&sl[0], SL_USER_0, VQ_OUT);
+
+  for (u32 i = 1; i < sl_size - 1; i++)
+  {  
+    sl_bind_buffer(&sl[i], buffer + 512 * (i - 1),  sizeof(struct virtio_block_req_block));
+    sl_bind_attribute(&sl[i], SL_USER_0, VQ_IN);
+  }
+
+  sl_bind_buffer(&sl[sl_size - 1], ihdr, sizeof(struct virtio_block_req_in_hdr));
+  sl_bind_attribute(&sl[sl_size - 1], SL_USER_0, VQ_IN);
+
+  virtio_queue_enqueue(reqq, sl);
   virtio_queue_kick(reqq);
 }
 
 void
-vdev_write_request(struct virtio_block *vdev, u32 sector, u8 *buffer, size_t size)
+vdev_write_request(struct virtio_block *vdev, u32 sector, u8 *buffer, size_t len)
 {
   struct block_request_port *rport = &vdev -> rport;
-  struct virtio_block_req *req = port_get_free_request(rport);
+  u8 *hdrs = kzmalloc(sizeof(struct virtio_block_req_in_hdr) + sizeof(struct virtio_block_req_out_hdr));
 
-  assert1(req);
+  struct virtio_block_req_out_hdr *ohdr = (struct virtio_block_req_out_hdr*)hdrs;
+  struct virtio_block_req_in_hdr  *ihdr = (struct virtio_block_req_in_hdr*)(ohdr + 1);
 
-  req -> type = VIRTIO_BLK_T_OUT;;
-  req -> sector = sector;
-  memcpy(buffer, req -> data, size);
+  u32 sector_count = (len + 511) / 512;
+  u32 sl_size = sector_count + 2;
+
+  ohdr -> type = VIRTIO_BLK_T_OUT;
+  ohdr -> sector = sector;
 
   struct virtio_queue *reqq = rport -> reqq;
-  virtio_queue_enqueue(reqq, (u8*)req, sizeof(struct virtio_block_req), VQ_OUT);
+
+  struct scatterlist sl[sl_size];
+  sl_list_init(sl, sl_size);
+
+  sl_bind_buffer(&sl[0], ohdr, sizeof(struct virtio_block_req_out_hdr));
+  sl_bind_attribute(&sl[0], SL_USER_0, VQ_OUT);
+
+  for (u32 i = 1; i < sl_size - 1; i++)
+  {  
+    sl_bind_buffer(&sl[i], buffer + 512 * (i - 1),  sizeof(struct virtio_block_req_block));
+    sl_bind_attribute(&sl[i], SL_USER_0, VQ_IN);
+  }
+
+  sl_bind_buffer(&sl[sl_size - 1], ihdr, sizeof(struct virtio_block_req_in_hdr));
+  sl_bind_attribute(&sl[sl_size - 1], SL_USER_0, VQ_IN);
+
+  virtio_queue_enqueue(reqq, sl);
   virtio_queue_kick(reqq);
 }
 
@@ -217,12 +216,14 @@ bdev_features(struct virtio_dev *vdev, u32 features)
   return vdev_confirm_features(vdev, mandatory_features);
 }
 
+u8 *buffer;
+
 internal void
 write_later(u32 addr)
 {
-  LOG("Writing something in here!\n");
   struct virtio_block *bdev = (struct virtio_block*)(addr);
-  vdev_read_request(bdev, 1);
+  buffer = kzmalloc(512);
+  vdev_read_request(bdev,  1, buffer, 512);
 }
 
 b8
@@ -250,7 +251,7 @@ bdev_setup(struct virtio_dev *vdev)
 
   block_request_port_init(bdev);
 
-  new_timer(200*1000 *1000, write_later, (u32)bdev);
+  new_timer(2*1000*1000, write_later, (u32)bdev);
 
   return 1;
 }
@@ -258,6 +259,29 @@ bdev_setup(struct virtio_dev *vdev)
 void
 bdev_interrupt(const union biosregs *iregs, struct virtio_dev *vdev)
 {
+  struct virtio_block *bdev =  vdev_to_bdev(vdev);
+  u8 isr = virtio_get_isr(vdev);
+
+  if ((isr & 0x1) == 0x1)
+  {
+    struct block_request_port *rport = &bdev -> rport;
+    if (virtio_queue_has_unseen_buffers(rport -> reqq))
+    {
+      struct scatterlist *sl = virtio_queue_dequeue(rport -> reqq);
+      u8 *buffer = sl_get_buffer(sl);
+
+      LOGV("%p", buffer);
+      struct virtio_block_req_out_hdr *hdr = (struct virtio_block_req_out_hdr*)buffer;
+      LOGV("%p", hdr -> type);  
+    }
+  }
+  if ((isr & 0x3) == 0x3)
+  {
+    LOG("CONFIGURATION_CHANGE!\n");
+  }
+
+  LOG("INTERRUPT!\n");
+  LOGV("%d", buffer[0]);
 }
 
 struct virtio_driver virtio_block_driver = {

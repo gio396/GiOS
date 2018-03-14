@@ -60,9 +60,9 @@ struct virtio_queue*
 virtio_create_queue(u32 size);
 
 void
-virtio_queue_enqueue(struct virtio_queue* q, u8 *buffer, size_t last_buffer_seen, u8 direction);
+virtio_queue_enqueue(struct virtio_queue* q, struct scatterlist *sl);
 
-struct scatterlist
+struct scatterlist*
 virtio_queue_dequeue(struct virtio_queue *q); 
 
 void
@@ -76,5 +76,8 @@ virtq_assign_buffer(struct virtio_queue *q);
 
 i8
 virtio_queue_has_unseen_buffers(struct virtio_queue *q);
+
+u16
+virtio_queue_num_heads(struct virtio_queue *vq);
 
 #endif

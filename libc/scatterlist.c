@@ -8,19 +8,12 @@
 
 #define SLITER_BEGIN 0x1
 
-struct scatterlist_iter
-{
-  struct scatterlist *list;
-  u8 flags;
-
-  void *buffer;
-  u32 len;
-};
-
 void
 slit_begin(struct scatterlist_iter *sliter, struct scatterlist *sl)
 {
-  sliter -> list = sl;
+  memset(sliter, 0, sizeof(struct scatterlist_iter));
+
+  sliter -> list = (sl - 1);
   sliter -> flags = SET_BIT(sliter -> flags, SLITER_BEGIN);
 }
 
@@ -29,7 +22,7 @@ slit_next(struct scatterlist_iter *sliter)
 {
   struct scatterlist *list = sliter -> list;
 
-  if (!IS_BIT_SET(sliter -> flags, SLITER_BEGIN) && SCATTERLIST_IS_LAST(list))
+  if (!(IS_BIT_SET(sliter -> flags, SLITER_BEGIN)) && SCATTERLIST_IS_LAST(list))
     return 0;
 
   sliter -> flags = CLEAR_BIT(sliter -> flags, SLITER_BEGIN);
@@ -40,10 +33,10 @@ slit_next(struct scatterlist_iter *sliter)
     list = SCATTERLIST_NEXT_CHAIN(list);
   }
 
-  sliter  -> list = list;
-  sliter  -> buffer = (u8*)SCATTERLIST_PAGE_ADDR(list) + list -> off;
-  sliter  -> len = list -> len;
-
+  sliter -> list = list;
+  sliter -> buffer = (u8*)SCATTERLIST_PAGE_ADDR(list) + list -> off;
+  sliter -> len = list -> len;
+  sliter -> user_flags = ((list -> page_addr) >> SL_USER_0 & 0xff); 
   return 1;
 }
 
@@ -88,9 +81,9 @@ sl_copy_buffer(struct scatterlist *sl, u32 skip, u8 *buffer, u32 buf_len, u8 dir
   return offset;
 }
 
-#define SCATTERLIST_SET_CHAIN(s) ((s) -> page_addr = SET_BIT((s) -> page_addr, 0x2))
+#define SCATTERLIST_SET_CHAIN(s) ((s) -> page_addr = SET_BIT((s) -> page_addr, 0x1))
 #define SCATTERLIST_SET_ADDR(s, addr)  ((s) -> page_addr = ((s) -> page_addr & 0x3) | (u32)(addr))
-#define SCATTERLIST_SET_LAST(s) ((s) -> page_addr = SET_BIT((s) -> page_addr, 0x1))
+#define SCATTERLIST_SET_LAST(s) ((s) -> page_addr = SET_BIT((s) -> page_addr, 0x2))
 
 b8
 sl_chain(struct scatterlist *sl1, struct scatterlist *sl2)
@@ -113,6 +106,7 @@ void
 sl_list_init(struct scatterlist *list, u32 nents)
 {
   struct scatterlist *lastent = &list[nents - 1];
+  memset(list, 0, sizeof(struct scatterlist) * nents);
   SCATTERLIST_SET_LAST(lastent);
 }
 
@@ -127,8 +121,23 @@ sl_bind_buffer(struct scatterlist *sl, void *buffer, u32 len)
   sl -> len = len;
 }
 
+void
+sl_bind_attribute(struct scatterlist *sl, u32 pos, u32 val)
+{
+  u32 page_addr = sl -> page_addr;
+  page_addr |= (val << pos);
+
+  sl -> page_addr = page_addr;
+}
+
 void*
 sl_get_buffer(struct scatterlist *sl)
 {
   return (void*)(SCATTERLIST_PAGE_ADDR(sl) + sl -> off);
+}
+
+void
+sl_make_last(struct scatterlist *sl)
+{
+  sl -> page_addr |= 0x1;
 }
