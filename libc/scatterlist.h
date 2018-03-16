@@ -7,7 +7,7 @@
 #define SCATTERLIST_IS_CHAIN(s) ((s) -> page_addr & 0x1)
 #define SCATTERLIST_IS_LAST(s) ((s) -> page_addr & 0x2)
 #define SCATTERLIST_NEXT_CHAIN(s) ((struct scatterlist*)((s) -> page_addr & ~0x3))
-#define SCATTERLIST_PAGE_ADDR(s) (u32)((s) -> page_addr & ~0x3)
+#define SCATTERLIST_PAGE_ADDR(s) (u32)((s) -> page_addr & ~(kb(4) - 1))
 
 #define SL_IN 0x0
 #define SL_OUT 0x1

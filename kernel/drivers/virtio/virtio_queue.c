@@ -102,7 +102,9 @@ virtio_queue_dequeue(struct virtio_queue *q)
 {
   u32 heads = virtio_queue_num_heads(q);
   struct scatterlist *res = (struct scatterlist*)kzmalloc(sizeof(struct scatterlist) * heads);
-  sl_list_init(res, heads);
+  struct scatterlist *iter = res;
+
+  sl_list_init(iter, heads);
   u16 buffer_index;
 
   do
@@ -115,11 +117,11 @@ virtio_queue_dequeue(struct virtio_queue *q)
     u8  *buffer = (u8*)(size_t)q -> desc[buffer_index].addr;
     q -> last_buffer_seen++;
 
-    sl_bind_buffer(res, buffer, len);
-    res++;
+    sl_bind_buffer(iter, buffer, len);
+    iter++;
   } while ((q -> desc[buffer_index].flags & VIRTQ_DESC_F_NEXT) != 0);
 
-  sl_make_last(--res);
+  sl_make_last(--iter);
 
   return res;
 }

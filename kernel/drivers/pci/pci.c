@@ -728,7 +728,6 @@ void
 pci_init()
 {
   global_bus = (struct pci_bus* )kzmalloc(sizeof(struct pci_bus));
-
   global_bus -> pci_device_bus = register_device_bus("pci_bus");
 }
 

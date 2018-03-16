@@ -21,6 +21,9 @@ to_upper(i8* str);
 b32
 strncmp(const i8 *str1, const i8 *str2, size_t num);
 
+b32
+strcmp(const i8 *a, const i8 *b);
+
 void*
 memset(void* s, i32 c, size_t n);
 

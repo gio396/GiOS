@@ -281,3 +281,14 @@ memcpy(const void *s, void *d, size_t n)
 
   return d;
 }
+
+b32
+strcmp(const i8 *a, const i8 *b)
+{
+  i8 *it_a = (i8*)(a);
+  i8 *it_b = (i8*)(b);
+
+  while ((*it_a != '\0' || it_b != '\0') && *it_a == *it_b) {it_a++; it_b++};
+
+  return *it_b - *it_a;
+}

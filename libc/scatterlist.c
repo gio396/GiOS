@@ -34,7 +34,7 @@ slit_next(struct scatterlist_iter *sliter)
   }
 
   sliter -> list = list;
-  sliter -> buffer = (u8*)SCATTERLIST_PAGE_ADDR(list) + list -> off;
+  sliter -> buffer = sl_get_buffer(list);
   sliter -> len = list -> len;
   sliter -> user_flags = ((list -> page_addr) >> SL_USER_0 & 0xff); 
   return 1;
@@ -139,5 +139,5 @@ sl_get_buffer(struct scatterlist *sl)
 void
 sl_make_last(struct scatterlist *sl)
 {
-  sl -> page_addr |= 0x1;
+  sl -> page_addr |= 0x2;
 }
